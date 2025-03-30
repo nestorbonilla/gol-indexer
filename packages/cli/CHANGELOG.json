@@ -1,0 +1,491 @@
+{
+  "name": "apibara",
+  "entries": [
+    {
+      "date": "Tue, 25 Mar 2025 13:41:11 GMT",
+      "version": "2.1.0-beta.22",
+      "tag": "apibara_v2.1.0-beta.22",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "9eeb140ee9ad0ad8d68aa7a28b2600e0b77c0bdf",
+            "comment": "cli: improve dev output and update template"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 24 Mar 2025 15:58:22 GMT",
+      "version": "2.1.0-beta.21",
+      "tag": "apibara_v2.1.0-beta.21",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "75b7f0e954ae42dcee61f6d8718f0a1f1ab9c25b",
+            "comment": "cli: fix dev reload, change flag names, args validation, bump drizzle-orm version in template"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 21 Mar 2025 11:03:55 GMT",
+      "version": "2.1.0-beta.15",
+      "tag": "apibara_v2.1.0-beta.15",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "7834780b8a32bed724cceb24b0b1a207b9eccd91",
+            "comment": "cli: add createAuthenticatedClient and improve runtimeConfig"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 17 Mar 2025 14:45:17 GMT",
+      "version": "2.1.0-beta.13",
+      "tag": "apibara_v2.1.0-beta.13",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "84b595200c1ba9dc7a162e02c338fc252a263651",
+            "comment": "feat: add instrumentation for side effects"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Thu, 13 Mar 2025 02:42:29 GMT",
+      "version": "2.1.0-beta.11",
+      "tag": "apibara_v2.1.0-beta.11",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "9a267284e78a7324f1e4f196f65b4f9e261ec93e",
+            "comment": "feat: integrate runtime configuration serialization into rolldown"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Tue, 11 Mar 2025 08:30:59 GMT",
+      "version": "2.1.0-beta.10",
+      "tag": "apibara_v2.1.0-beta.10",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "07c2484dd7141b365e1770fdf4eeec41c4750e9f",
+            "comment": "cli: add alwaysReindex flag to reset database/persistence states on dev restarts"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Tue, 11 Mar 2025 08:18:43 GMT",
+      "version": "2.1.0-beta.9",
+      "tag": "apibara_v2.1.0-beta.9",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "32e33f3f3e8128ef05632c42647c324f47ef8e9e",
+            "comment": "cli: refactor and replace rollup with rolldown"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 10 Mar 2025 10:36:18 GMT",
+      "version": "2.1.0-beta.8",
+      "tag": "apibara_v2.1.0-beta.8",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "nicolascoquelet@gmail.com",
+            "package": "apibara",
+            "commit": "05ae45d95b0b6044019e64800dba1afc0a087492",
+            "comment": "fix: install command doesn't require 'run'"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sun, 09 Mar 2025 05:58:19 GMT",
+      "version": "2.1.0-beta.7",
+      "tag": "apibara_v2.1.0-beta.7",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "d3eb6f4573082fc33d791cdaaf35bef4e8083102",
+            "comment": "cli: update templates for drizzle changes and improve help"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 28 Feb 2025 19:17:34 GMT",
+      "version": "2.1.0-beta.6",
+      "tag": "apibara_v2.1.0-beta.6",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "6bbbb782c992727cfd8d4df7deb165ccb188a273",
+            "comment": "cli: fix build if the indexer file doesn't export anything"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 26 Feb 2025 19:47:55 GMT",
+      "version": "2.1.0-beta.5",
+      "tag": "apibara_v2.1.0-beta.5",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "8e74dc416a017994b6d11d444a72fa855b330f1d",
+            "comment": "cli: add .gitignore template"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sat, 22 Feb 2025 19:44:04 GMT",
+      "version": "2.1.0-beta.4",
+      "tag": "apibara_v2.1.0-beta.4",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "da2cfe06bf4c421d09eb9593849f9fd05f0adb74",
+            "comment": "cli: set package versions to \"next\""
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sat, 22 Feb 2025 19:04:40 GMT",
+      "version": "2.1.0-beta.3",
+      "tag": "apibara_v2.1.0-beta.3",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "118e2491ead736166106a63aa1304b8a0d2ae7d1",
+            "comment": "cli: prettier formatting and noIndexer flag"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 21 Feb 2025 19:49:06 GMT",
+      "version": "2.1.0-beta.1",
+      "tag": "apibara_v2.1.0-beta.1",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "faf774da594da306d44457193be5e4f261c61cbd",
+            "comment": "Update all public packages to version 2.1.0-beta.0"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 21 Feb 2025 16:21:00 GMT",
+      "version": "2.0.0-beta.42",
+      "tag": "apibara_v2.0.0-beta.42",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "a87deb2fd5fc3c1aa9160fd756be9ba72805dfd1",
+            "comment": "cli: bump @electric-sql/pglite version"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 21 Feb 2025 14:35:19 GMT",
+      "version": "2.0.0-beta.41",
+      "tag": "apibara_v2.0.0-beta.41",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "dc5bfc2a1717128741d124960cd30dbc50ef403e",
+            "comment": "cli: init and add command "
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 19 Feb 2025 12:45:45 GMT",
+      "version": "2.0.0-beta.39",
+      "tag": "apibara_v2.0.0-beta.39",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "48b95487559656319d5802c59cd893b607cfa92f",
+            "comment": "cli: remove esbuild plugin from rollup"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sun, 02 Feb 2025 09:38:12 GMT",
+      "version": "2.0.0-beta.38",
+      "tag": "apibara_v2.0.0-beta.38",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "3cb4eae954098dea58f593acfbf7f212d43a6c11",
+            "comment": "cli: add internalContext plugin for runtime context"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 23 Dec 2024 11:34:53 GMT",
+      "version": "2.0.0-beta.28",
+      "tag": "apibara_v2.0.0-beta.28",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "61a19d0455c8fd78d2b7b9dbdce9cf6ecefc469e",
+            "comment": "indexer: replace sink with middleware"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sun, 08 Dec 2024 14:48:11 GMT",
+      "version": "2.0.0-beta.25",
+      "tag": "apibara_v2.0.0-beta.25",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "37f00c0656f140466d3500b2c5ad1c8d8f5356e4",
+            "comment": "cli: fix infinite type instantiation errors in apibara config"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Tue, 03 Dec 2024 12:54:33 GMT",
+      "version": "2.0.0-beta.24",
+      "tag": "apibara_v2.0.0-beta.24",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "975b8004e02cb732aad4357d28176118c8d9637c",
+            "comment": "cli: add @electric-sql/pglite as external dependency"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sat, 30 Nov 2024 16:55:34 GMT",
+      "version": "2.0.0-beta.22",
+      "tag": "apibara_v2.0.0-beta.22",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "19ac26a702f877655df52653029f859b213d7d18",
+            "comment": "indexer: reconnect indexer on internal stream errors"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sat, 30 Nov 2024 11:36:48 GMT",
+      "version": "2.0.0-beta.21",
+      "tag": "apibara_v2.0.0-beta.21",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "80b95432a58db6d8c443afe3d47439e16ecfaf38",
+            "comment": "cli: use default logger that includes indexer name"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 29 Nov 2024 15:14:44 GMT",
+      "version": "2.0.0-beta.20",
+      "tag": "apibara_v2.0.0-beta.20",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "829a617ae31486666099e84711bdacd1af8f7554",
+            "comment": "Add logger plugin"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 29 Nov 2024 13:19:26 GMT",
+      "version": "2.0.0-beta.18",
+      "tag": "apibara_v2.0.0-beta.18",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "0d87c0c3498983e75e5b00a37f33a8f3b172bf66",
+            "comment": "cli: remove unused dev argument"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Thu, 28 Nov 2024 11:36:10 GMT",
+      "version": "2.0.0-beta.17",
+      "tag": "apibara_v2.0.0-beta.17",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "96cc294cafd41ae0e1dc33e39b7259d36d61ae72",
+            "comment": "Refactor testing module"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 27 Nov 2024 10:20:55 GMT",
+      "version": "2.0.0-beta.16",
+      "tag": "apibara_v2.0.0-beta.16",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "15a81d272833891d8ceda48bb71bca525904f38d",
+            "comment": "cli: add shebang banner to cli module"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 27 Nov 2024 08:54:56 GMT",
+      "version": "2.0.0-beta.15",
+      "tag": "apibara_v2.0.0-beta.15",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "66c907d8cac119e8f0d1c47146372fc506bb4d87",
+            "comment": "cli: include runtime-meta in package"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 06 Nov 2024 19:16:31 GMT",
+      "version": "2.0.0-beta.13",
+      "tag": "apibara_v2.0.0-beta.13",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "1d78fece2924de1afa6b37c90add240bfb9b02ff",
+            "comment": "Refactor dev, build, and start commands"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sun, 20 Oct 2024 18:49:49 GMT",
+      "version": "2.0.0-beta.8",
+      "tag": "apibara_v2.0.0-beta.8",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "apibara",
+            "commit": "26ccbab32e1c16bbbb73f556878a830d5c6663f3",
+            "comment": "fix cli bugs"
+          },
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "26ccbab32e1c16bbbb73f556878a830d5c6663f3",
+            "comment": "protocol: change `HeaderFilter` to enum"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 16 Oct 2024 11:29:42 GMT",
+      "version": "2.0.0-beta.6",
+      "tag": "apibara_v2.0.0-beta.6",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "52061e50a07dad274bab166a2be899a81b6f99c6",
+            "comment": "Fix release"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 14 Oct 2024 13:04:10 GMT",
+      "version": "2.0.0-beta.5",
+      "tag": "apibara_v2.0.0-beta.5",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "apibara",
+            "commit": "d35473744126f4b9bae05c67d3066e8e4bb9a893",
+            "comment": "Bump version to match packages"
+          }
+        ]
+      }
+    }
+  ]
+}

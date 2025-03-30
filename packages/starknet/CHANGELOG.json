@@ -1,0 +1,176 @@
+{
+  "name": "@apibara/starknet",
+  "entries": [
+    {
+      "date": "Fri, 21 Mar 2025 20:02:55 GMT",
+      "version": "2.1.0-beta.19",
+      "tag": "@apibara/starknet_v2.1.0-beta.19",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "ae9282c0f22ba5c45991012370828753e1e7ceae",
+            "comment": "starknet: add support for transaction traces"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Thu, 20 Mar 2025 16:44:14 GMT",
+      "version": "2.1.0-beta.14",
+      "tag": "@apibara/starknet_v2.1.0-beta.14",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "e2d3973154a3857fadad80cafc690b39dc370746",
+            "comment": "starknet: export missing types"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 21 Feb 2025 19:49:06 GMT",
+      "version": "2.1.0-beta.1",
+      "tag": "@apibara/starknet_v2.1.0-beta.1",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "faf774da594da306d44457193be5e4f261c61cbd",
+            "comment": "Update all public packages to version 2.1.0-beta.0"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 20 Jan 2025 15:38:48 GMT",
+      "version": "2.0.0-beta.35",
+      "tag": "@apibara/starknet_v2.0.0-beta.35",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "854fcc7400be65217baed478d05c2f009001e378",
+            "comment": "starknet: make some types required"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sat, 18 Jan 2025 22:34:42 GMT",
+      "version": "2.0.0-beta.34",
+      "tag": "@apibara/starknet_v2.0.0-beta.34",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "207bd64408db832fde969c7121f76a825d8fa508",
+            "comment": "evm: add log index in transaction field"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 17 Jan 2025 19:26:05 GMT",
+      "version": "2.0.0-beta.32",
+      "tag": "@apibara/starknet_v2.0.0-beta.32",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "dcfeb7e8cfbe8d0263eb0dd407d666fe6be14aa9",
+            "comment": "starknet: only re-export Abi type"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 17 Jan 2025 15:20:18 GMT",
+      "version": "2.0.0-beta.31",
+      "tag": "@apibara/starknet_v2.0.0-beta.31",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "c5a1ee9ca102c81b526a4db59d5ebb371001c08e",
+            "comment": "Add event decoder"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Fri, 29 Nov 2024 13:19:26 GMT",
+      "version": "2.0.0-beta.18",
+      "tag": "@apibara/starknet_v2.0.0-beta.18",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "0d87c0c3498983e75e5b00a37f33a8f3b172bf66",
+            "comment": "starknet: fix Event.address name"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Sun, 20 Oct 2024 18:49:49 GMT",
+      "version": "2.0.0-beta.8",
+      "tag": "@apibara/starknet_v2.0.0-beta.8",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "jadejajaipal5@gmail.com",
+            "package": "@apibara/starknet",
+            "commit": "26ccbab32e1c16bbbb73f556878a830d5c6663f3",
+            "comment": "fix build inconsistencies"
+          },
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "26ccbab32e1c16bbbb73f556878a830d5c6663f3",
+            "comment": "starknet: add state update data"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Wed, 16 Oct 2024 11:29:42 GMT",
+      "version": "2.0.0-beta.6",
+      "tag": "@apibara/starknet_v2.0.0-beta.6",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "52061e50a07dad274bab166a2be899a81b6f99c6",
+            "comment": "Fix release"
+          }
+        ]
+      }
+    },
+    {
+      "date": "Mon, 14 Oct 2024 13:04:10 GMT",
+      "version": "2.0.0-beta.5",
+      "tag": "@apibara/starknet_v2.0.0-beta.5",
+      "comments": {
+        "prerelease": [
+          {
+            "author": "francesco@ceccon.me",
+            "package": "@apibara/starknet",
+            "commit": "d35473744126f4b9bae05c67d3066e8e4bb9a893",
+            "comment": "Update protobuf definitions"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "apibara-typescript-sdk",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Apibara Typescript monorepo",
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:ci": "turbo run test:ci",
+    "test:postgres": "docker run --rm -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres:16",
+    "lint": "pnpm run -r lint",
+    "lint:fix": "pnpm run -r lint:fix",
+    "release": "pnpm build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apibara/typescript-sdk.git"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.1",
+    "beachball": "^2.47.1",
+    "turbo": "^2.1.2",
+    "typescript": "^5.6.2"
+  },
+  "packageManager": "pnpm@9.10.0",
+  "beachball": {
+    "prereleasePrefix": "beta",
+    "groups": [
+      {
+        "name": "v2-prerelease",
+        "include": [
+          "packages/beaconchain",
+          "packages/cli",
+          "packages/evm",
+          "packages/indexer",
+          "packages/protocol",
+          "packages/starknet",
+          "packages/plugin-drizzle",
+          "packages/plugin-mongo",
+          "packages/plugin-sqlite"
+        ]
+      }
+    ],
+    "ignorePatterns": [
+      "examples/**"
+    ]
+  }
+}
