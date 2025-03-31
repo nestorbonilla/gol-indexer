@@ -1,49 +1,39 @@
 {
-  "name": "apibara-typescript-sdk",
+  "name": "example-cli-drizzle",
   "private": true,
   "version": "0.0.0",
-  "description": "Apibara Typescript monorepo",
+  "description": "",
+  "type": "module",
   "scripts": {
-    "build": "turbo run build",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "test:ci": "turbo run test:ci",
-    "test:postgres": "docker run --rm -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres postgres:16",
-    "lint": "pnpm run -r lint",
-    "lint:fix": "pnpm run -r lint:fix",
-    "release": "pnpm build"
+    "dev": "apibara dev",
+    "lint": "biome check .",
+    "lint:fix": "pnpm lint --write",
+    "test": "vitest",
+    "drizzle:generate": "drizzle-kit generate",
+    "drizzle:migrate": "drizzle-kit migrate"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/apibara/typescript-sdk.git"
-  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "devDependencies": {
-    "@biomejs/biome": "^1.9.1",
-    "beachball": "^2.47.1",
-    "turbo": "^2.1.2",
-    "typescript": "^5.6.2"
+    "@types/node": "^20.5.2",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.29.0",
+    "typescript": "^5.6.2",
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^1.6.0"
   },
-  "packageManager": "pnpm@9.10.0",
-  "beachball": {
-    "prereleasePrefix": "beta",
-    "groups": [
-      {
-        "name": "v2-prerelease",
-        "include": [
-          "packages/beaconchain",
-          "packages/cli",
-          "packages/evm",
-          "packages/indexer",
-          "packages/protocol",
-          "packages/starknet",
-          "packages/plugin-drizzle",
-          "packages/plugin-mongo",
-          "packages/plugin-sqlite"
-        ]
-      }
-    ],
-    "ignorePatterns": [
-      "examples/**"
-    ]
+  "dependencies": {
+    "@apibara/evm": "next",
+    "@apibara/indexer": "next",
+    "@apibara/plugin-drizzle": "next",
+    "@apibara/protocol": "next",
+    "@apibara/starknet": "next",
+    "@electric-sql/pglite": "^0.2.17",
+    "apibara": "next",
+    "drizzle-orm": "^0.40.1",
+    "pg": "^8.13.1",
+    "starknet": "^6.11.0",
+    "viem": "^2.21.53"
   }
 }
