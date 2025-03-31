@@ -11,7 +11,7 @@ const NEW_LIFEFORM_SELECTOR = "0x11f46882e19ad05d3762feda18b95af02b4d04ff264658d
 // Lifeform tokens on Starknet Sepolia
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
   const {
-    starknet: { startingBlock },
+    starknet: { startingBlock, streamUrl },
   } = runtimeConfig;
 
   const database = drizzle({
@@ -19,18 +19,20 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       lifeformTokens,
     },
   });
+  console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
 
   return defineIndexer(StarknetStream)({
-    streamUrl: "https://sepolia.starknet.a5a.ch",
+    streamUrl,
     finality: "accepted",
-    startingBlock: 635900n, // Start just before contract deployment
+    startingBlock: BigInt(startingBlock),
+    debug: true,
     plugins: [
       drizzleStorage({
         db: database,
         idColumn: {
           "*": "_id",
         },
-        persistState: true,
+        persistState: false,
         indexerName: "lifeform_tokens",
         migrate: {
           migrationsFolder: "./drizzle",
