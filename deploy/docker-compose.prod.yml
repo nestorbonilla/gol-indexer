@@ -15,6 +15,7 @@ services:
         export ENCODED_PASSWORD=$$(node -e 'console.log(encodeURIComponent(process.env.SUPABASE_PASSWORD));') &&
         export POSTGRES_CONNECTION_STRING=postgresql://postgres:$$ENCODED_PASSWORD@$${SUPABASE_HOST}:5432/postgres &&
         echo 'Using connection string with encoded password' &&
+        pnpm apibara build &&
         pnpm apibara start --indexer starknet-lifeform
       "
 

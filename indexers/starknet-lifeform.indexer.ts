@@ -50,7 +50,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         idColumn: {
           "*": "_id",
         },
-        persistState: true,
+        persistState: true, // Enable persistence, leave false if you want to populate the database from scratch
         indexerName: "lifeform_tokens",
         migrate: {
           migrationsFolder: "./drizzle",
