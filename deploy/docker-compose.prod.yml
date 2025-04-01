@@ -10,8 +10,6 @@ services:
       - SUPABASE_PASSWORD=${SUPABASE_PASSWORD}
       - DNA_TOKEN=${DNA_TOKEN}
     network_mode: "host"
-    volumes:
-      - apibara_data:/app/.apibara
     command: >
       /bin/bash -c "
         export ENCODED_PASSWORD=$$(node -e 'console.log(encodeURIComponent(process.env.SUPABASE_PASSWORD));') &&
@@ -22,5 +20,4 @@ services:
       "
 
 volumes:
-  postgres_data:
-  apibara_data: 
+  postgres_data: 
