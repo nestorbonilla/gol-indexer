@@ -6,6 +6,23 @@ import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
 import { parseBool, parseContractAddress, parseStruct, parseU256, parseU32 } from "@apibara/starknet/parser";
 
+// Define types for the parsed event data
+type LifeFormData = {
+  isLoop: boolean;
+  isStill: boolean;
+  isAlive: boolean;
+  isDead: boolean;
+  sequenceLength: bigint;
+  currentState: bigint;
+  age: bigint;
+};
+
+type NewLifeFormEvent = {
+  owner: string;
+  tokenId: bigint;
+  data: LifeFormData;
+};
+
 const CONTRACT_ADDRESS = "0x00f92d3789e679e4ac8e94472ec6a67a63b99d042f772a0227b0d6bd241096c2";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 
@@ -57,7 +74,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         if (!event.data) continue;
 
         // Extract all fields from the lifeform data
-        const { out: decoded } = parseNewLifeFormEvent(event.data, 0);
+        const { out: decoded } = parseNewLifeFormEvent(event.data, 0) as { out: NewLifeFormEvent, offset: number };
         logger.info(decoded);
         await db.insert(lifeformTokens).values({
           block_number: Number(endCursor?.orderKey || 0),
@@ -68,9 +85,9 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           is_still: decoded.data.isStill,
           is_alive: decoded.data.isAlive,
           is_dead: decoded.data.isDead,
-          sequence_length: decoded.data.sequenceLength,
-          current_state: decoded.data.currentState,
-          age: decoded.data.age,
+          sequence_length: Number(decoded.data.sequenceLength),
+          current_state: decoded.data.currentState.toString(),
+          age: Number(decoded.data.age),
         });
       }
     },
