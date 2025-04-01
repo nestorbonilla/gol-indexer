@@ -123,11 +123,11 @@ fi
 
 # Build and deploy
 echo "Building and deploying the indexer..."
-docker-compose -f deploy/docker-compose.prod.yml up -d --build
+docker compose -f deploy/docker-compose.prod.yml up -d --build
 
 # Check status
 echo "Deployment complete. Checking container status..."
-docker-compose -f deploy/docker-compose.prod.yml ps
+docker compose -f deploy/docker-compose.prod.yml ps
 
 echo "Deployment successful! Showing logs (press Ctrl+C to exit)..."
-docker-compose -f deploy/docker-compose.prod.yml logs -f 
+docker compose -f deploy/docker-compose.prod.yml logs -f 
