@@ -59,18 +59,6 @@ if [ -z "$DNA_TOKEN" ]; then
   fi
 fi
 
-# Create swap space if memory is low (less than 1GB)
-TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
-if [ "$TOTAL_MEM" -lt "1024" ] && [ ! -f /swapfile ]; then
-  echo "System memory is low. Creating 1GB swap file..."
-  fallocate -l 1G /swapfile
-  chmod 600 /swapfile
-  mkswap /swapfile
-  swapon /swapfile
-  echo '/swapfile none swap sw 0 0' >> /etc/fstab
-  echo "Swap file created and enabled."
-fi
-
 # Digital Ocean metadata service IP
 METADATA_IP=${DO_METADATA_IP:-169.254.169.254}
 
@@ -134,11 +122,8 @@ else
 fi
 
 # Build and deploy
-echo "Starting the indexer container..."
-# Remove old container if exists
-docker compose -f deploy/docker-compose.prod.yml down || true
-# Start new container
-docker compose -f deploy/docker-compose.prod.yml up -d
+echo "Building and deploying the indexer..."
+docker compose -f deploy/docker-compose.prod.yml up -d --build
 
 # Check status
 echo "Deployment complete. Checking container status..."

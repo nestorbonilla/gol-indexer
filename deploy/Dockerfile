@@ -2,17 +2,23 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install pnpm with a specific version to avoid issues
-RUN npm install -g pnpm@8.10.0
+# Install pnpm
+RUN npm install -g pnpm
 
-# Copy package files first
-COPY package.json ./
+# Copy package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml* ./
 
-# Install dependencies with production flag
-RUN pnpm install --prod --no-frozen-lockfile
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
-# Copy application code
+# Copy source code
 COPY . .
+
+# Build the application
+RUN pnpm run drizzle:generate
+
+# Expose port for the API if needed
+EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
