@@ -22,8 +22,8 @@ EXPOSE 3000
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV POSTGRES_CONNECTION_STRING=postgres://postgres:${SUPABASE_PASSWORD}@${SUPABASE_HOST}:5432/postgres
-ENV DNA_TOKEN=${DNA_TOKEN}
+# POSTGRES_CONNECTION_STRING will be set dynamically in the command
+# to handle special characters in the password
 
-# Start the application
-CMD ["pnpm", "start"] 
+# Default command - will be overridden by docker-compose
+CMD ["pnpm", "apibara", "start", "--indexer", "starknet-lifeform"] 
