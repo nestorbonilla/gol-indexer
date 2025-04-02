@@ -1,10 +1,11 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { getSelector, StarknetStream } from "@apibara/starknet";
-import { lifeformTokens } from "@/lib/schema";
+import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
 import { parseBool, parseContractAddress, parseStruct, parseU256, parseU32 } from "@apibara/starknet/parser";
+import { eq } from "drizzle-orm";
 
 // Define types for the parsed event data
 type LifeFormData = {
@@ -23,8 +24,15 @@ type NewLifeFormEvent = {
   data: LifeFormData;
 };
 
+type TransferEvent = {
+  from: string;
+  to: string;
+  tokenId: bigint;
+};
+
 const CONTRACT_ADDRESS = "0x00f92d3789e679e4ac8e94472ec6a67a63b99d042f772a0227b0d6bd241096c2";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
+const TRANSFER_SELECTOR = getSelector("Transfer");
 
 // Lifeform tokens on Starknet Sepolia
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
@@ -35,6 +43,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
   const database = drizzle({
     schema: {
       lifeformTokens,
+      lifeformTransfers,
     },
   });
   console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
@@ -61,7 +70,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       events: [
         {
           address: CONTRACT_ADDRESS as `0x${string}`,
-          keys: [NEW_LIFEFORM_SELECTOR],
+          keys: [NEW_LIFEFORM_SELECTOR, TRANSFER_SELECTOR],
         },
       ],
     },
@@ -73,22 +82,52 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       for (const event of events) {
         if (!event.data) continue;
 
-        // Extract all fields from the lifeform data
-        const { out: decoded } = parseNewLifeFormEvent(event.data, 0) as { out: NewLifeFormEvent, offset: number };
-        logger.info(decoded);
-        await db.insert(lifeformTokens).values({
-          block_number: Number(endCursor?.orderKey || 0),
-          transaction_hash: event.transactionHash || "",
-          owner: decoded.owner,
-          token_id: decoded.tokenId?.toString(),
-          is_loop: decoded.data.isLoop,
-          is_still: decoded.data.isStill,
-          is_alive: decoded.data.isAlive,
-          is_dead: decoded.data.isDead,
-          sequence_length: Number(decoded.data.sequenceLength),
-          current_state: decoded.data.currentState.toString(),
-          age: Number(decoded.data.age),
-        });
+        if (event.keys[0] === NEW_LIFEFORM_SELECTOR) {
+          // Extract all fields from the lifeform data
+          const { out: decoded } = parseNewLifeFormEvent(event.data, 0) as { out: NewLifeFormEvent, offset: number };
+          logger.info(decoded);
+          
+          // Insert into lifeform_tokens (current state)
+          await db.insert(lifeformTokens).values({
+            token_id: decoded.tokenId?.toString(),
+            owner: decoded.owner,
+            is_loop: decoded.data.isLoop,
+            is_still: decoded.data.isStill,
+            is_alive: decoded.data.isAlive,
+            is_dead: decoded.data.isDead,
+            sequence_length: Number(decoded.data.sequenceLength),
+            current_state: decoded.data.currentState.toString(),
+            age: Number(decoded.data.age),
+          });
+
+          // Record the mint transfer
+          await db.insert(lifeformTransfers).values({
+            token_id: decoded.tokenId?.toString(),
+            from_address: "0x0", // For mints, from is 0x0
+            to_address: decoded.owner,
+            block_number: Number(endCursor?.orderKey || 0),
+            transaction_hash: event.transactionHash || "",
+          });
+
+        } else if (event.keys[0] === TRANSFER_SELECTOR) {
+          // Extract transfer event data
+          const { out: decoded } = parseTransferEvent(event.data, 0) as { out: TransferEvent, offset: number };
+          logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.tokenId})`);
+          
+          // Update current owner in lifeform_tokens
+          await db.update(lifeformTokens)
+            .set({ owner: decoded.to })
+            .where(eq(lifeformTokens.token_id, decoded.tokenId.toString()));
+
+          // Record transfer in history
+          await db.insert(lifeformTransfers).values({
+            token_id: decoded.tokenId.toString(),
+            from_address: decoded.from,
+            to_address: decoded.to,
+            block_number: Number(endCursor?.orderKey || 0),
+            transaction_hash: event.transactionHash || "",
+          });
+        }
       }
     },
   });
@@ -113,4 +152,10 @@ const parseNewLifeFormEvent = parseStruct({
   owner: { index: 0, parser: parseContractAddress },
   tokenId: { index: 1, parser: parseU256 },
   data: { index: 2, parser: parseLifeFormData }
-})
+});
+
+const parseTransferEvent = parseStruct({
+  from: { index: 0, parser: parseContractAddress },
+  to: { index: 1, parser: parseContractAddress },
+  tokenId: { index: 2, parser: parseU256 }
+});

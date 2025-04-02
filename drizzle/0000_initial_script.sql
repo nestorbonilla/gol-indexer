@@ -1,9 +1,7 @@
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"block_number" bigint,
-	"transaction_hash" text,
-	"owner" text,
-	"token_id" text,
+	"token_id" text UNIQUE NOT NULL,
+	"owner" text NOT NULL,
 	"is_loop" boolean,
 	"is_still" boolean,
 	"is_alive" boolean,
@@ -11,4 +9,14 @@ CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"sequence_length" bigint,
 	"current_state" text,
 	"age" bigint
+);
+
+CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
+	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"token_id" text NOT NULL,
+	"from_address" text NOT NULL,
+	"to_address" text NOT NULL,
+	"block_number" bigint NOT NULL,
+	"transaction_hash" text NOT NULL,
+	"timestamp" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
 );
