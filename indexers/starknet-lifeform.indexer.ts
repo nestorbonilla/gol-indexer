@@ -34,6 +34,9 @@ const CONTRACT_ADDRESS = "0x00f92d3789e679e4ac8e94472ec6a67a63b99d042f772a0227b0
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
 
+console.log("Contract address:", CONTRACT_ADDRESS);
+console.log("New lifeform selector:", NEW_LIFEFORM_SELECTOR);
+console.log("Transfer selector:", TRANSFER_SELECTOR);
 // Lifeform tokens on Starknet Sepolia
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
   const {
@@ -59,7 +62,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         idColumn: {
           "*": "_id",
         },
-        persistState: true, // Enable persistence, leave false if you want to populate the database from scratch
+        persistState: false, // Enable persistence, leave false if you want to populate the database from scratch
         indexerName: "lifeform_tokens",
         migrate: {
           migrationsFolder: "./drizzle",
@@ -80,6 +83,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       const { events } = block;
 
       for (const event of events) {
+        logger.info(`Processing block ${endCursor?.orderKey}, transaction: ${event.transactionHash}`);
         if (!event.data) continue;
 
         if (event.keys[0] === NEW_LIFEFORM_SELECTOR) {

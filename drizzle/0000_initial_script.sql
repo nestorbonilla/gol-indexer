@@ -1,3 +1,6 @@
+-- Drop the existing constraint first if it exists
+ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
+
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"token_id" text UNIQUE NOT NULL,
