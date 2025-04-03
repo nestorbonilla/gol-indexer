@@ -12,6 +12,10 @@ fi
 # Navigate to project root directory
 cd "$(dirname "$0")/.." || exit
 
+# If you want to delete all docker containers and volumes, run the following command:
+# docker system prune -a --volumes
+# docker builder prune -a
+
 # Check if .env exists; if not, create it and prompt for values
 if [ ! -f .env ]; then
   echo "Creating .env file and collecting required values..."
@@ -42,6 +46,9 @@ fi
 set -a # automatically export all variables
 source .env
 set +a
+
+# If you want to clean the database, run the following command:
+# psql -h SUPABASE_HOST -U postgres -d postgres -f deploy/reset-supabase-db.sql
 
 # Validate required variables
 if [ -z "$SUPABASE_HOST" ] || [ -z "$SUPABASE_PASSWORD" ]; then

@@ -54,8 +54,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
   return defineIndexer(StarknetStream)({
     streamUrl,
     finality: "accepted",
-    // startingBlock: BigInt(startingBlock),
-    startingBlock: 635900n,
+    startingBlock: BigInt(startingBlock),
     debug: true,
     plugins: [
       drizzleStorage({
