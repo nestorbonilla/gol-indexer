@@ -49,12 +49,13 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       lifeformTransfers,
     },
   });
-  console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
+  console.log(`Starting block: ${635900n} at ${streamUrl}`);
 
   return defineIndexer(StarknetStream)({
     streamUrl,
     finality: "accepted",
-    startingBlock: BigInt(startingBlock),
+    // startingBlock: BigInt(startingBlock),
+    startingBlock: 635900n,
     debug: true,
     plugins: [
       drizzleStorage({
@@ -62,7 +63,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         idColumn: {
           "*": "_id",
         },
-        persistState: false, // Enable persistence, leave false if you want to populate the database from scratch
+        persistState: true, // Enable persistence, leave false if you want to populate the database from scratch
         indexerName: "lifeform_tokens",
         migrate: {
           migrationsFolder: "./drizzle",
@@ -81,9 +82,10 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       const logger = useLogger();
       const { db } = useDrizzleStorage();
       const { events } = block;
-
+      console.log(`Current block number: ${block.header.blockNumber}`);
+      console.log(`Received block ${endCursor?.orderKey} with ${events.length} events`);
+      
       for (const event of events) {
-        logger.info(`Processing block ${endCursor?.orderKey}, transaction: ${event.transactionHash}`);
         if (!event.data) continue;
 
         if (event.keys[0] === NEW_LIFEFORM_SELECTOR) {
