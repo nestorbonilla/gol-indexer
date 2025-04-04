@@ -16,6 +16,7 @@ COPY . .
 
 # Build the application
 RUN pnpm run drizzle:generate
+RUN pnpm run build
 
 # Expose port for the API if needed
 EXPOSE 3000
@@ -26,4 +27,4 @@ ENV NODE_ENV=production
 # to handle special characters in the password
 
 # Default command - will be overridden by docker-compose
-CMD ["pnpm", "apibara", "start", "--indexer", "starknet-lifeform"] 
+CMD ["node", "/app/.apibara/build/start.mjs", "start", "--indexer", "starknet-lifeform"] 
