@@ -1,6 +1,6 @@
 -- Drop the existing constraint first if it exists
 ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
-
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"token_id" text UNIQUE NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"current_state" text,
 	"age" bigint
 );
-
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"token_id" text NOT NULL,
