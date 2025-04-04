@@ -1,34 +1,11 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
-import { getSelector, StarknetStream } from "@apibara/starknet";
+import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
 import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
-import { parseBool, parseContractAddress, parseStruct, parseU256, parseU32 } from "@apibara/starknet/parser";
 import { eq } from "drizzle-orm";
-
-// Define types for the parsed event data
-type LifeFormData = {
-  isLoop: boolean;
-  isStill: boolean;
-  isAlive: boolean;
-  isDead: boolean;
-  sequenceLength: bigint;
-  currentState: bigint;
-  age: bigint;
-};
-
-type NewLifeFormEvent = {
-  owner: string;
-  tokenId: bigint;
-  data: LifeFormData;
-};
-
-type TransferEvent = {
-  from: string;
-  to: string;
-  tokenId: bigint;
-};
+import { lifeformAbi } from "@/lib/abi";
 
 const CONTRACT_ADDRESS = "0x00f92d3789e679e4ac8e94472ec6a67a63b99d042f772a0227b0d6bd241096c2";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
@@ -37,6 +14,7 @@ const TRANSFER_SELECTOR = getSelector("Transfer");
 console.log("Contract address:", CONTRACT_ADDRESS);
 console.log("New lifeform selector:", NEW_LIFEFORM_SELECTOR);
 console.log("Transfer selector:", TRANSFER_SELECTOR);
+
 // Lifeform tokens on Starknet Sepolia
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
   const {
@@ -49,7 +27,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       lifeformTransfers,
     },
   });
-  console.log(`Starting block: ${635900n} at ${streamUrl}`);
+  console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
 
   return defineIndexer(StarknetStream)({
     streamUrl,
@@ -70,97 +48,94 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       }),
     ],
     filter: {
+      // Notice that you need one filter per event type.
+      // https://www.apibara.com/docs/v2/networks/starknet/filter#events
       events: [
         {
           address: CONTRACT_ADDRESS as `0x${string}`,
-          keys: [NEW_LIFEFORM_SELECTOR, TRANSFER_SELECTOR],
+          keys: [NEW_LIFEFORM_SELECTOR],
+        },
+        {
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          keys: [TRANSFER_SELECTOR],
         },
       ],
+    },
+    hooks: {
+      "connect:after": ({ request }) => {
+        // Log the starting cursor
+        const logger = useLogger();
+        logger.info(`Connected with cursor ${request.startingCursor?.orderKey}/${request.startingCursor?.uniqueKey}`)
+      }
     },
     async transform({ endCursor, block }) {
       const logger = useLogger();
       const { db } = useDrizzleStorage();
-      const { events } = block;
-      console.log(`Current block number: ${block.header.blockNumber}`);
-      console.log(`Received block ${endCursor?.orderKey} with ${events.length} events`);
+      const { header, events } = block;
+      logger.info(`Current block number: ${block.header.blockNumber}`);
+      logger.info(`Received block ${endCursor?.orderKey} with ${events.length} events`);
       
       for (const event of events) {
-        if (!event.data) continue;
+        // Decode the event based on the lifeform ABI
+        const decoded = decodeEvent({
+          abi: lifeformAbi,
+          event,
+          eventName: "gol_starknet::gol_lifeforms::GolLifeforms::Event"
+        })
 
-        if (event.keys[0] === NEW_LIFEFORM_SELECTOR) {
-          // Extract all fields from the lifeform data
-          const { out: decoded } = parseNewLifeFormEvent(event.data, 0) as { out: NewLifeFormEvent, offset: number };
-          logger.info(decoded);
-          
-          // Insert into lifeform_tokens (current state)
-          await db.insert(lifeformTokens).values({
-            token_id: decoded.tokenId?.toString(),
-            owner: decoded.owner,
-            is_loop: decoded.data.isLoop,
-            is_still: decoded.data.isStill,
-            is_alive: decoded.data.isAlive,
-            is_dead: decoded.data.isDead,
-            sequence_length: Number(decoded.data.sequenceLength),
-            current_state: decoded.data.currentState.toString(),
-            age: Number(decoded.data.age),
-          });
+        // Notice that the type of `decoded.args._tag` is an enum, so the case statements will
+        // autocomplete with the event names.
+        switch (decoded.args._tag) {
+          case "NewLifeForm": {
+            const newLifeForm = decoded.args.NewLifeForm;
+            logger.info(newLifeForm);
+            
+            // Insert into lifeform_tokens (current state)
+            await db.insert(lifeformTokens).values({
+              token_id: newLifeForm.token_id?.toString(),
+              owner: newLifeForm.owner,
+              is_loop: newLifeForm.lifeform_data.is_loop,
+              is_still: newLifeForm.lifeform_data.is_still,
+              is_alive: newLifeForm.lifeform_data.is_alive,
+              is_dead: newLifeForm.lifeform_data.is_dead,
+              sequence_length: Number(newLifeForm.lifeform_data.sequence_length),
+              current_state: newLifeForm.lifeform_data.current_state.toString(),
+              age: Number(newLifeForm.lifeform_data.age),
+            });
 
-          // Record the mint transfer
-          await db.insert(lifeformTransfers).values({
-            token_id: decoded.tokenId?.toString(),
-            from_address: "0x0", // For mints, from is 0x0
-            to_address: decoded.owner,
-            block_number: Number(endCursor?.orderKey || 0),
-            transaction_hash: event.transactionHash || "",
-          });
+            // Record the mint transfer
+            await db.insert(lifeformTransfers).values({
+              token_id: newLifeForm.token_id?.toString(),
+              from_address: "0x0", // For mints, from is 0x0
+              to_address: newLifeForm.owner,
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+            });
+            break;
+          }
+          case "Transfer": {
+            // Get value of inner `Transfer` event.
+            const transfer = decoded.args.Transfer;
+            logger.info(`Transfer: ${transfer.from} -> ${transfer.to} (token: ${transfer.token_id})`);
+            
+            // Update current owner in lifeform_tokens
+            await db.update(lifeformTokens)
+              .set({ owner: transfer.to })
+              .where(eq(lifeformTokens.token_id, transfer.token_id.toString()));
 
-        } else if (event.keys[0] === TRANSFER_SELECTOR) {
-          // Extract transfer event data
-          const { out: decoded } = parseTransferEvent(event.data, 0) as { out: TransferEvent, offset: number };
-          logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.tokenId})`);
-          
-          // Update current owner in lifeform_tokens
-          await db.update(lifeformTokens)
-            .set({ owner: decoded.to })
-            .where(eq(lifeformTokens.token_id, decoded.tokenId.toString()));
+            // Record transfer in history
+            await db.insert(lifeformTransfers).values({
+              token_id: transfer.token_id.toString(),
+              from_address: transfer.from,
+              to_address: transfer.to,
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+            });
 
-          // Record transfer in history
-          await db.insert(lifeformTransfers).values({
-            token_id: decoded.tokenId.toString(),
-            from_address: decoded.from,
-            to_address: decoded.to,
-            block_number: Number(endCursor?.orderKey || 0),
-            transaction_hash: event.transactionHash || "",
-          });
+            break;
+          }
         }
       }
     },
   });
 } 
-
-/* The built-in event decoder does not support all Cairo abi yet.
- *
- * In this case it would fail, for this reason I'm creating the "abi parser" manually.
- */
-
-const parseLifeFormData = parseStruct({
-  isLoop: { index: 0, parser: parseBool },
-  isStill: { index: 1, parser: parseBool },
-  isAlive: { index: 2, parser: parseBool },
-  isDead: { index: 3, parser: parseBool },
-  sequenceLength: { index: 4, parser: parseU32 },
-  currentState: { index: 5, parser: parseU256 },
-  age: { index: 6, parser: parseU32 },
-});
-
-const parseNewLifeFormEvent = parseStruct({
-  owner: { index: 0, parser: parseContractAddress },
-  tokenId: { index: 1, parser: parseU256 },
-  data: { index: 2, parser: parseLifeFormData }
-});
-
-const parseTransferEvent = parseStruct({
-  from: { index: 0, parser: parseContractAddress },
-  to: { index: 1, parser: parseContractAddress },
-  tokenId: { index: 2, parser: parseU256 }
-});
