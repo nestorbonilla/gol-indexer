@@ -41,6 +41,9 @@ BEGIN
   END IF;
 END $$;
 
+-- Drop the function if it exists
+DROP FUNCTION IF EXISTS get_latest_transfers_for_tokens(TEXT, TEXT);
+
 -- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
   pattern_type TEXT,
