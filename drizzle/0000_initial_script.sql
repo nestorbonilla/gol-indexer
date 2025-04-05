@@ -1,9 +1,4 @@
--- We need to drop the foreign key constraint first if it exists
-ALTER TABLE IF EXISTS "lifeform_transfers" DROP CONSTRAINT IF EXISTS "lifeform_transfers_token_id_fkey";
-
--- Now we can safely drop the unique constraint
-ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
-
+-- Create tables and constraints without trying to drop anything
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"token_id" text NOT NULL,
@@ -17,8 +12,15 @@ CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"age" bigint
 );
 
--- Add unique constraint for token_id
-ALTER TABLE "lifeform_tokens" ADD CONSTRAINT "lifeform_tokens_token_id_unique" UNIQUE("token_id");
+-- Add unique constraint for token_id if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'lifeform_tokens_token_id_unique'
+  ) THEN
+    ALTER TABLE "lifeform_tokens" ADD CONSTRAINT "lifeform_tokens_token_id_unique" UNIQUE("token_id");
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -40,9 +42,6 @@ BEGIN
     FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
   END IF;
 END $$;
-
--- Drop the function if it exists
-DROP FUNCTION IF EXISTS get_latest_transfers_for_tokens(TEXT, TEXT);
 
 -- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
