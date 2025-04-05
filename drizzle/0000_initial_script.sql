@@ -27,3 +27,66 @@ CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"timestamp" timestamp with time zone DEFAULT now(),
 	CONSTRAINT "lifeform_transfers_token_id_fkey" FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE
 );
+
+- Function to get lifeform tokens with their latest transfers
+CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
+  pattern_type TEXT,
+  owner_address TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  _id TEXT,
+  age INTEGER,
+  current_state TEXT,
+  is_alive BOOLEAN,
+  is_dead BOOLEAN,
+  is_loop BOOLEAN,
+  is_still BOOLEAN,
+  owner TEXT,
+  sequence_length INTEGER,
+  token_id TEXT,
+  latest_block_number INTEGER,
+  latest_transaction_hash TEXT
+) AS $$
+BEGIN
+  RETURN QUERY
+  WITH latest_transfers AS (
+    SELECT 
+      token_id,
+      block_number,
+      transaction_hash,
+      ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY block_number DESC) AS rn
+    FROM lifeform_transfers
+  ),
+  filtered_tokens AS (
+    SELECT *
+    FROM lifeform_tokens
+    WHERE 
+      (pattern_type = 'all') OR
+      (pattern_type = 'still' AND is_still = TRUE) OR
+      (pattern_type = 'loop' AND is_loop = TRUE AND is_still = FALSE) OR
+      (pattern_type = 'path' AND is_still = FALSE AND is_loop = FALSE)
+  )
+  SELECT 
+    t._id,
+    t.age,
+    t.current_state,
+    t.is_alive,
+    t.is_dead,
+    t.is_loop,
+    t.is_still,
+    t.owner,
+    t.sequence_length,
+    t.token_id,
+    lt.block_number AS latest_block_number,
+    lt.transaction_hash AS latest_transaction_hash
+  FROM filtered_tokens t
+  LEFT JOIN latest_transfers lt ON t.token_id = lt.token_id AND lt.rn = 1
+  WHERE 
+    (owner_address IS NULL) OR 
+    (t.owner = owner_address)
+  ORDER BY 
+    COALESCE(lt.block_number, 0) DESC,
+    t.token_id
+  LIMIT CASE WHEN owner_address IS NULL THEN 100 ELSE NULL END;
+END;
+$$ LANGUAGE plpgsql; 
