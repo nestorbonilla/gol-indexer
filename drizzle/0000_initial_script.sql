@@ -1,6 +1,8 @@
--- Drop the existing constraint first if it exists
-ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
+-- We need to drop the foreign key constraint first if it exists
 ALTER TABLE IF EXISTS "lifeform_transfers" DROP CONSTRAINT IF EXISTS "lifeform_transfers_token_id_fkey";
+
+-- Now we can safely drop the unique constraint
+ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
 
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
