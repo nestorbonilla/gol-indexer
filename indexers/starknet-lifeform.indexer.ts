@@ -7,6 +7,19 @@ import type { ApibaraRuntimeConfig } from "apibara/types";
 import { eq } from "drizzle-orm";
 import { lifeformAbi } from "@/lib/abi";
 
+// Helper function to normalize addresses to a consistent format
+function normalizeAddress(address: string): string {
+  // If it's the zero address in any format, return the full format
+  if (address === "0x0" || address === "0x0000000000000000000000000000000000000000000000000000000000000000") {
+    return "0x0000000000000000000000000000000000000000000000000000000000000000";
+  }
+  // If it's a shortened address (less than 66 chars), pad it
+  if (address.startsWith("0x") && address.length < 66) {
+    return address.padEnd(66, "0");
+  }
+  return address;
+}
+
 const CONTRACT_ADDRESS = "0x00f92d3789e679e4ac8e94472ec6a67a63b99d042f772a0227b0d6bd241096c2";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
@@ -93,7 +106,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             // Insert into lifeform_tokens (current state)
             await db.insert(lifeformTokens).values({
               token_id: newLifeForm.token_id?.toString(),
-              owner: newLifeForm.owner,
+              owner: normalizeAddress(newLifeForm.owner),
               is_loop: newLifeForm.lifeform_data.is_loop,
               is_still: newLifeForm.lifeform_data.is_still,
               is_alive: newLifeForm.lifeform_data.is_alive,
@@ -107,7 +120,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             await db.insert(lifeformTransfers).values({
               token_id: newLifeForm.token_id?.toString(),
               from_address: "0x0000000000000000000000000000000000000000000000000000000000000000", // For mints, from is zero address
-              to_address: newLifeForm.owner,
+              to_address: normalizeAddress(newLifeForm.owner),
               block_number: Number(header.blockNumber),
               transaction_hash: event.transactionHash || "",
             });
@@ -120,14 +133,14 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             
             // Update current owner in lifeform_tokens
             await db.update(lifeformTokens)
-              .set({ owner: transfer.to })
+              .set({ owner: normalizeAddress(transfer.to) })
               .where(eq(lifeformTokens.token_id, transfer.token_id.toString()));
 
             // Record transfer in history
             await db.insert(lifeformTransfers).values({
               token_id: transfer.token_id.toString(),
-              from_address: transfer.from,
-              to_address: transfer.to,
+              from_address: normalizeAddress(transfer.from),
+              to_address: normalizeAddress(transfer.to),
               block_number: Number(header.blockNumber),
               transaction_hash: event.transactionHash || "",
             });
