@@ -20,7 +20,7 @@ function normalizeAddress(address: string): string {
   return address;
 }
 
-const CONTRACT_ADDRESS = "0x6b1d124e0634d43eef34edb58d17a0fa5c830576bc42719d768f6dd409b0a17";
+const CONTRACT_ADDRESS = "0x7ff678f63c01ee6486fb4d3b0fcb234e7d0656eebf9df01c296accf6f0f73d8";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
 
@@ -119,7 +119,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             // Record the mint transfer
             await db.insert(lifeformTransfers).values({
               token_id: newLifeForm.token_id?.toString(),
-              from_address: "0x0000000000000000000000000000000000000000000000000000000000000000", // For mints, from is zero address
+              from_address: normalizeAddress("0x0"), // For mints, from is zero address
               to_address: normalizeAddress(newLifeForm.owner),
               block_number: Number(header.blockNumber),
               transaction_hash: event.transactionHash || "",
