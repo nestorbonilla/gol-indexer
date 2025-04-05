@@ -1,5 +1,6 @@
 -- Drop the existing constraint first if it exists
 ALTER TABLE IF EXISTS "lifeform_tokens" DROP CONSTRAINT IF EXISTS "lifeform_tokens_token_id_unique";
+ALTER TABLE IF EXISTS "lifeform_transfers" DROP CONSTRAINT IF EXISTS "lifeform_transfers_token_id_fkey";
 
 CREATE TABLE IF NOT EXISTS "lifeform_tokens" (
 	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -24,17 +25,27 @@ CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"to_address" text NOT NULL,
 	"block_number" bigint NOT NULL,
 	"transaction_hash" text NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now(),
-	CONSTRAINT "lifeform_transfers_token_id_fkey" FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE
+	"timestamp" timestamp with time zone DEFAULT now()
 );
 
-- Function to get lifeform tokens with their latest transfers
+-- Add foreign key constraint if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'lifeform_transfers_token_id_fkey'
+  ) THEN
+    ALTER TABLE "lifeform_transfers" ADD CONSTRAINT "lifeform_transfers_token_id_fkey" 
+    FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
+  END IF;
+END $$;
+
+-- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
   pattern_type TEXT,
   owner_address TEXT DEFAULT NULL
 )
 RETURNS TABLE (
-  _id TEXT,
+  _id UUID,
   age INTEGER,
   current_state TEXT,
   is_alive BOOLEAN,
