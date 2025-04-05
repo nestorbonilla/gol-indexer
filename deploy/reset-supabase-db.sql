@@ -2,6 +2,8 @@ DO $$
 DECLARE
     schema_name text;
     table_name text;
+    function_name text;
+    function_args text;
 BEGIN
     -- Part 1: Drop custom schemas (excluding Supabase ones)
     RAISE NOTICE 'Starting to drop custom schemas...';
@@ -31,6 +33,21 @@ BEGIN
     LOOP
         EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(table_name) || ' CASCADE';
         RAISE NOTICE 'Dropped table: %', table_name;
+    END LOOP;
+    
+    -- Part 3: Drop functions in public schema
+    RAISE NOTICE 'Starting to drop functions in public schema...';
+    
+    FOR function_name, function_args IN
+        SELECT p.proname, pg_get_function_identity_arguments(p.oid)
+        FROM pg_proc p
+        JOIN pg_namespace n ON p.pronamespace = n.oid
+        JOIN pg_roles r ON p.proowner = r.oid
+        WHERE n.nspname = 'public'
+        AND r.rolname = current_user
+    LOOP
+        EXECUTE 'DROP FUNCTION IF EXISTS public.' || quote_ident(function_name) || '(' || function_args || ') CASCADE';
+        RAISE NOTICE 'Dropped function: %(%)', function_name, function_args;
     END LOOP;
     
     RAISE NOTICE 'Database reset complete.';

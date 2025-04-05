@@ -46,41 +46,41 @@ DROP FUNCTION IF EXISTS get_latest_transfers_for_tokens(TEXT, TEXT);
 
 -- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
-  pattern_type TEXT,
-  owner_address TEXT DEFAULT NULL
+  pattern_type text,
+  owner_address text DEFAULT NULL
 )
 RETURNS TABLE (
   _id UUID,
-  age INTEGER,
-  current_state TEXT,
-  is_alive BOOLEAN,
-  is_dead BOOLEAN,
-  is_loop BOOLEAN,
-  is_still BOOLEAN,
-  owner TEXT,
-  sequence_length INTEGER,
-  token_id TEXT,
-  latest_block_number INTEGER,
-  latest_transaction_hash TEXT
+  age bigint,
+  current_state text,
+  is_alive boolean,
+  is_dead boolean,
+  is_loop boolean,
+  is_still boolean,
+  owner text,
+  sequence_length bigint,
+  token_id text,
+  latest_block_number bigint,
+  latest_transaction_hash text
 ) AS $$
 BEGIN
   RETURN QUERY
   WITH latest_transfers AS (
     SELECT 
-      token_id,
-      block_number,
-      transaction_hash,
-      ROW_NUMBER() OVER (PARTITION BY token_id ORDER BY block_number DESC) AS rn
-    FROM lifeform_transfers
+      lt.token_id,
+      lt.block_number,
+      lt.transaction_hash,
+      ROW_NUMBER() OVER (PARTITION BY lt.token_id ORDER BY lt.block_number DESC) AS rn
+    FROM lifeform_transfers lt
   ),
   filtered_tokens AS (
     SELECT *
-    FROM lifeform_tokens
+    FROM lifeform_tokens t
     WHERE 
       (pattern_type = 'all') OR
-      (pattern_type = 'still' AND is_still = TRUE) OR
-      (pattern_type = 'loop' AND is_loop = TRUE AND is_still = FALSE) OR
-      (pattern_type = 'path' AND is_still = FALSE AND is_loop = FALSE)
+      (pattern_type = 'still' AND t.is_still = TRUE) OR
+      (pattern_type = 'loop' AND t.is_loop = TRUE AND t.is_still = FALSE) OR
+      (pattern_type = 'path' AND t.is_still = FALSE AND t.is_loop = FALSE)
   )
   SELECT 
     t._id,
