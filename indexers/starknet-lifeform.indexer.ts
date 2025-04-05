@@ -106,7 +106,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             // Record the mint transfer
             await db.insert(lifeformTransfers).values({
               token_id: newLifeForm.token_id?.toString(),
-              from_address: "0x0", // For mints, from is 0x0
+              from_address: "0x0000000000000000000000000000000000000000000000000000000000000000", // For mints, from is zero address
               to_address: newLifeForm.owner,
               block_number: Number(header.blockNumber),
               transaction_hash: event.transactionHash || "",
