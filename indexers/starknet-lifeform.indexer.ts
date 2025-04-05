@@ -88,66 +88,69 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       logger.info(`Current block number: ${block.header.blockNumber}`);
       logger.info(`Received block ${endCursor?.orderKey} with ${events.length} events`);
       
+      // First, process all NewLifeForm events to ensure tokens exist
+      const newLifeFormEvents = [];
+      const transferEvents = [];
+
+      // Separate events by type
       for (const event of events) {
-        // Decode the event based on the lifeform ABI
         const decoded = decodeEvent({
           abi: lifeformAbi,
           event,
           eventName: "gol_starknet::gol_lifeforms::GolLifeforms::Event"
-        })
+        });
 
-        // Notice that the type of `decoded.args._tag` is an enum, so the case statements will
-        // autocomplete with the event names.
-        switch (decoded.args._tag) {
-          case "NewLifeForm": {
-            const newLifeForm = decoded.args.NewLifeForm;
-            logger.info(newLifeForm);
-            
-            // Insert into lifeform_tokens (current state)
-            await db.insert(lifeformTokens).values({
-              token_id: newLifeForm.token_id?.toString(),
-              owner: normalizeAddress(newLifeForm.owner),
-              is_loop: newLifeForm.lifeform_data.is_loop,
-              is_still: newLifeForm.lifeform_data.is_still,
-              is_alive: newLifeForm.lifeform_data.is_alive,
-              is_dead: newLifeForm.lifeform_data.is_dead,
-              sequence_length: Number(newLifeForm.lifeform_data.sequence_length),
-              current_state: newLifeForm.lifeform_data.current_state.toString(),
-              age: Number(newLifeForm.lifeform_data.age),
-            });
-
-            // Record the mint transfer
-            await db.insert(lifeformTransfers).values({
-              token_id: newLifeForm.token_id?.toString(),
-              from_address: normalizeAddress("0x0"), // For mints, from is zero address
-              to_address: normalizeAddress(newLifeForm.owner),
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
-            });
-            break;
-          }
-          case "Transfer": {
-            // Get value of inner `Transfer` event.
-            const transfer = decoded.args.Transfer;
-            logger.info(`Transfer: ${transfer.from} -> ${transfer.to} (token: ${transfer.token_id})`);
-            
-            // Update current owner in lifeform_tokens
-            await db.update(lifeformTokens)
-              .set({ owner: normalizeAddress(transfer.to) })
-              .where(eq(lifeformTokens.token_id, transfer.token_id.toString()));
-
-            // Record transfer in history
-            await db.insert(lifeformTransfers).values({
-              token_id: transfer.token_id.toString(),
-              from_address: normalizeAddress(transfer.from),
-              to_address: normalizeAddress(transfer.to),
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
-            });
-
-            break;
-          }
+        if (decoded.args._tag === "NewLifeForm") {
+          newLifeFormEvents.push({ event, decoded: decoded.args.NewLifeForm });
+        } else if (decoded.args._tag === "Transfer") {
+          transferEvents.push({ event, decoded: decoded.args.Transfer });
         }
+      }
+
+      // Process NewLifeForm events first
+      for (const { event, decoded } of newLifeFormEvents) {
+        logger.info(decoded);
+        
+        // Insert into lifeform_tokens (current state)
+        await db.insert(lifeformTokens).values({
+          token_id: decoded.token_id?.toString(),
+          owner: normalizeAddress(decoded.owner),
+          is_loop: decoded.lifeform_data.is_loop,
+          is_still: decoded.lifeform_data.is_still,
+          is_alive: decoded.lifeform_data.is_alive,
+          is_dead: decoded.lifeform_data.is_dead,
+          sequence_length: Number(decoded.lifeform_data.sequence_length),
+          current_state: decoded.lifeform_data.current_state.toString(),
+          age: Number(decoded.lifeform_data.age),
+        });
+
+        // Record the mint transfer
+        await db.insert(lifeformTransfers).values({
+          token_id: decoded.token_id?.toString(),
+          from_address: normalizeAddress("0x0"), // For mints, from is zero address
+          to_address: normalizeAddress(decoded.owner),
+          block_number: Number(header.blockNumber),
+          transaction_hash: event.transactionHash || "",
+        });
+      }
+
+      // Then process Transfer events
+      for (const { event, decoded } of transferEvents) {
+        logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
+        
+        // Update current owner in lifeform_tokens
+        await db.update(lifeformTokens)
+          .set({ owner: normalizeAddress(decoded.to) })
+          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
+
+        // Record transfer in history
+        await db.insert(lifeformTransfers).values({
+          token_id: decoded.token_id.toString(),
+          from_address: normalizeAddress(decoded.from),
+          to_address: normalizeAddress(decoded.to),
+          block_number: Number(header.blockNumber),
+          transaction_hash: event.transactionHash || "",
+        });
       }
     },
   });
