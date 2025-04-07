@@ -20,13 +20,15 @@ function normalizeAddress(address: string): string {
   return address;
 }
 
-const CONTRACT_ADDRESS = "0x7ff678f63c01ee6486fb4d3b0fcb234e7d0656eebf9df01c296accf6f0f73d8";
+const CONTRACT_ADDRESS = "0x076e65f2bea9d559196eb91e967e8c4f43b4503198978bf672d10149b70cc1c6";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
+const NEW_MOVE_SELECTOR = getSelector("NewMove");
 
 console.log("Contract address:", CONTRACT_ADDRESS);
 console.log("New lifeform selector:", NEW_LIFEFORM_SELECTOR);
 console.log("Transfer selector:", TRANSFER_SELECTOR);
+console.log("New move selector:", NEW_MOVE_SELECTOR);
 
 // Lifeform tokens on Starknet Sepolia
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
@@ -72,6 +74,10 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           address: CONTRACT_ADDRESS as `0x${string}`,
           keys: [TRANSFER_SELECTOR],
         },
+        {
+          address: CONTRACT_ADDRESS as `0x${string}`,
+          keys: [NEW_MOVE_SELECTOR],
+        },
       ],
     },
     hooks: {
@@ -85,12 +91,13 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       const logger = useLogger();
       const { db } = useDrizzleStorage();
       const { header, events } = block;
-      logger.info(`Current block number: ${block.header.blockNumber}`);
+      logger.info(`Current block number: ${header.blockNumber}`);
       logger.info(`Received block ${endCursor?.orderKey} with ${events.length} events`);
       
       // First, process all NewLifeForm events to ensure tokens exist
       const newLifeFormEvents = [];
       const transferEvents = [];
+      const newMoveEvents = [];
 
       // Separate events by type
       for (const event of events) {
@@ -104,6 +111,8 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           newLifeFormEvents.push({ event, decoded: decoded.args.NewLifeForm });
         } else if (decoded.args._tag === "Transfer") {
           transferEvents.push({ event, decoded: decoded.args.Transfer });
+        } else if (decoded.args._tag === "NewMove") {
+          newMoveEvents.push({ event, decoded: decoded.args.NewMove });        
         }
       }
 
@@ -132,6 +141,11 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           block_number: Number(header.blockNumber),
           transaction_hash: event.transactionHash || "",
         });
+
+        // Update the age in lifeform_tokens
+        await db.update(lifeformTokens)
+          .set({ age: Number(decoded.lifeform_data.age) })
+          .where(eq(lifeformTokens.token_id, decoded.token_id?.toString()));
       }
 
       // Then process Transfer events
