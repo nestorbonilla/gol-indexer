@@ -20,7 +20,7 @@ function normalizeAddress(address: string): string {
   return address;
 }
 
-const CONTRACT_ADDRESS = "0x076e65f2bea9d559196eb91e967e8c4f43b4503198978bf672d10149b70cc1c6";
+const CONTRACT_ADDRESS = "0x76bde53c020c929ee50a01c3851d7c359abb2a611002169f38601d562c982aa";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
 const NEW_MOVE_SELECTOR = getSelector("NewMove");
