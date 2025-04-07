@@ -4,7 +4,7 @@ export default defineConfig({
   debug: false,
   runtimeConfig: {
     starknet: {
-      startingBlock: 653_750,
+      startingBlock: 658_070,
       streamUrl: "https://starknet-sepolia.preview.apibara.org",
     },
   },
