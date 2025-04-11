@@ -1,7 +1,7 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
-import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
+import { lifeformTokens, lifeformTransfers, lifeformMoves } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
 import { eq } from "drizzle-orm";
@@ -40,6 +40,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
     schema: {
       lifeformTokens,
       lifeformTransfers,
+      lifeformMoves,
     },
   });
   console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
@@ -194,6 +195,19 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         await db.update(lifeformTokens)
           .set({ age: Number(decoded.age) })
           .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
+
+        // Insert into lifeform_moves
+        try {
+          await db.insert(lifeformMoves).values({
+            token_id: decoded.token_id.toString(),
+            caller_address: normalizeAddress(event.data[0] || "0x0"), // First data field is the caller address
+            block_number: Number(header.blockNumber),
+            transaction_hash: event.transactionHash || "",
+            age: Number(decoded.age)
+          });
+        } catch (error) {
+          logger.info(`Skipping duplicate move for token ${decoded.token_id}`);
+        }
       }
     },
   });
