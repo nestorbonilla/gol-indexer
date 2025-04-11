@@ -126,65 +126,7 @@ export const lifeformAbi = [
       },
       {
         "type": "function",
-        "name": "update_nutrient_contract_address",
-        "inputs": [
-          {
-            "name": "nutrient_contract_address",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "update_loop_minter_contract",
-        "inputs": [
-          {
-            "name": "loop_minter_contract",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "update_path_minter_contract",
-        "inputs": [
-          {
-            "name": "path_minter_contract",
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "get_nutrient_contract",
-        "inputs": [],
-        "outputs": [
-          {
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "get_loop_minter_contract",
-        "inputs": [],
-        "outputs": [
-          {
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "get_path_minter_contract",
+        "name": "get_nutrient_contract_address",
         "inputs": [],
         "outputs": [
           {
@@ -916,6 +858,42 @@ export const lifeformAbi = [
         "type": "core::starknet::contract_address::ContractAddress"
       }
     ]
+  },
+  {
+    "type": "function",
+    "name": "update_nutrient_contract_address",
+    "inputs": [
+      {
+        "name": "nutrient_contract_address",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "update_loop_minter_contract",
+    "inputs": [
+      {
+        "name": "loop_minter_contract",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
+  },
+  {
+    "type": "function",
+    "name": "update_path_minter_contract",
+    "inputs": [
+      {
+        "name": "path_minter_contract",
+        "type": "core::starknet::contract_address::ContractAddress"
+      }
+    ],
+    "outputs": [],
+    "state_mutability": "external"
   },
   {
     "type": "event",
