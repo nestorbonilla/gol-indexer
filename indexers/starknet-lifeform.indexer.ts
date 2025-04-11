@@ -1,12 +1,11 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
-import { lifeformTokens, lifeformTransfers, lifeformMoves } from "@/lib/schema";
+import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { lifeformAbi } from "@/lib/abi";
-import { inArray } from "drizzle-orm";
 
 // Helper function to normalize addresses to a consistent format
 function normalizeAddress(address: string): string {
@@ -41,7 +40,6 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
     schema: {
       lifeformTokens,
       lifeformTransfers,
-      lifeformMoves,
     },
   });
   console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
@@ -96,10 +94,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       logger.info(`Current block number: ${header.blockNumber}`);
       logger.info(`Received block ${endCursor?.orderKey} with ${events.length} events`);
       
-      // Log the block hash and parent hash to track block processing
-      logger.info(`Block hash: ${header.blockHash}, Parent hash: ${header.parentBlockHash}`);
-      
-      // Collect all events first
+      // First, process all NewLifeForm events to ensure tokens exist
       const newLifeFormEvents = [];
       const transferEvents = [];
       const newMoveEvents = [];
@@ -112,9 +107,6 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           eventName: "gol_starknet::gol_lifeforms::GolLifeforms::Event"
         });
 
-        // Log each event with its transaction hash and index
-        logger.info(`Event type: ${decoded.args._tag}, Transaction: ${event.transactionHash}, Index: ${event.transactionIndex}:${event.eventIndex}`);
-
         if (decoded.args._tag === "NewLifeForm") {
           newLifeFormEvents.push({ event, decoded: decoded.args.NewLifeForm });
         } else if (decoded.args._tag === "Transfer") {
@@ -124,75 +116,36 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Process in batches
-      if (newLifeFormEvents.length > 0) {
-        logger.info(`Processing ${newLifeFormEvents.length} NewLifeForm events`);
+      // Process NewLifeForm events first
+      for (const { event, decoded } of newLifeFormEvents) {
+        logger.info(decoded);
         
-        // Filter out existing tokens
-        const existingTokens = await db.select({ token_id: lifeformTokens.token_id })
-          .from(lifeformTokens)
-          .where(
-            inArray(
-              lifeformTokens.token_id,
-              newLifeFormEvents.map(e => e.decoded.token_id?.toString() || "")
-            )
-          );
-        
-        const existingTokenIds = new Set(existingTokens.map(t => t.token_id));
-        const newTokens = newLifeFormEvents.filter(e => !existingTokenIds.has(e.decoded.token_id?.toString()));
-        
-        if (newTokens.length > 0) {
-          // Batch insert for lifeform tokens
-          await db.insert(lifeformTokens).values(
-            newTokens.map(({ decoded }) => ({
-              token_id: decoded.token_id?.toString(),
-              owner: normalizeAddress(decoded.owner),
-              is_loop: decoded.lifeform_data.is_loop,
-              is_still: decoded.lifeform_data.is_still,
-              is_alive: decoded.lifeform_data.is_alive,
-              is_dead: decoded.lifeform_data.is_dead,
-              sequence_length: Number(decoded.lifeform_data.sequence_length),
-              current_state: decoded.lifeform_data.current_state.toString(),
-              age: Number(decoded.lifeform_data.age),
-            }))
-          );
-        }
-        
-        // Filter out existing transfers
-        const existingTransfers = await db.select({ 
-          token_id: lifeformTransfers.token_id,
-          block_number: lifeformTransfers.block_number,
-          transaction_hash: lifeformTransfers.transaction_hash
-        })
-        .from(lifeformTransfers)
-        .where(
-          inArray(
-            lifeformTransfers.token_id,
-            newLifeFormEvents.map(e => e.decoded.token_id?.toString() || "")
-          )
-        );
-        
-        const existingTransferKeys = new Set(
-          existingTransfers.map(t => `${t.token_id}-${t.block_number}-${t.transaction_hash}`)
-        );
-        
-        const newTransfers = newLifeFormEvents.filter(e => {
-          const key = `${e.decoded.token_id?.toString()}-${header.blockNumber}-${e.event.transactionHash}`;
-          return !existingTransferKeys.has(key);
+        // Insert into lifeform_tokens (current state)
+        await db.insert(lifeformTokens).values({
+          token_id: decoded.token_id?.toString(),
+          owner: normalizeAddress(decoded.owner),
+          is_loop: decoded.lifeform_data.is_loop,
+          is_still: decoded.lifeform_data.is_still,
+          is_alive: decoded.lifeform_data.is_alive,
+          is_dead: decoded.lifeform_data.is_dead,
+          sequence_length: Number(decoded.lifeform_data.sequence_length),
+          current_state: decoded.lifeform_data.current_state.toString(),
+          age: Number(decoded.lifeform_data.age),
         });
-        
-        if (newTransfers.length > 0) {
-          // Batch insert for transfers from minting
-          await db.insert(lifeformTransfers).values(
-            newTransfers.map(({ event, decoded }) => ({
-              token_id: decoded.token_id?.toString(),
-              from_address: normalizeAddress("0x0"),
-              to_address: normalizeAddress(decoded.owner),
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
-            }))
-          );
-        }
+
+        // Record the mint transfer
+        await db.insert(lifeformTransfers).values({
+          token_id: decoded.token_id?.toString(),
+          from_address: normalizeAddress("0x0"), // For mints, from is zero address
+          to_address: normalizeAddress(decoded.owner),
+          block_number: Number(header.blockNumber),
+          transaction_hash: event.transactionHash || "",
+        });
+
+        // Update the age in lifeform_tokens
+        await db.update(lifeformTokens)
+          .set({ age: Number(decoded.lifeform_data.age) })
+          .where(eq(lifeformTokens.token_id, decoded.token_id?.toString()));
       }
 
       // Then process Transfer events
@@ -222,16 +175,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         await db.update(lifeformTokens)
           .set({ age: Number(decoded.age) })
           .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
-          
-        // Record the move in lifeform_moves
-        await db.insert(lifeformMoves).values({
-          token_id: decoded.token_id.toString(),
-          caller_address: normalizeAddress("0x0"), // Default to zero address
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-          age: Number(decoded.age),
-        });
       }
     },
   });
-} 
+}
