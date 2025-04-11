@@ -152,7 +152,12 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "lifeform_transfers_unique_transfer": {
+          "name": "lifeform_transfers_unique_transfer",
+          "columns": ["token_id", "from_address", "to_address", "block_number", "transaction_hash"]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

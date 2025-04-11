@@ -1,4 +1,4 @@
-import { bigint, pgTable, text, uuid, boolean, timestamp } from "drizzle-orm/pg-core";
+import { bigint, pgTable, text, uuid, boolean, timestamp, integer, unique } from "drizzle-orm/pg-core";
 
 export const lifeformTokens = pgTable("lifeform_tokens", {
   _id: uuid("_id").primaryKey().defaultRandom(),
@@ -18,9 +18,19 @@ export const lifeformTransfers = pgTable("lifeform_transfers", {
   token_id: text("token_id").notNull(),
   from_address: text("from_address").notNull(),
   to_address: text("to_address").notNull(),
-  block_number: bigint("block_number", { mode: "number" }).notNull(),
+  block_number: integer("block_number").notNull(),
   transaction_hash: text("transaction_hash").notNull(),
-  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => {
+  return {
+    uniqueTransfer: unique().on(
+      table.token_id,
+      table.from_address,
+      table.to_address,
+      table.block_number,
+      table.transaction_hash
+    ),
+  };
 });
 
 export const lifeformMoves = pgTable("lifeform_moves", {

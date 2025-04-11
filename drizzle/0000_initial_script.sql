@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"to_address" text NOT NULL,
 	"block_number" bigint NOT NULL,
 	"transaction_hash" text NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now()
+	"timestamp" timestamp with time zone DEFAULT now(),
+	CONSTRAINT "lifeform_transfers_unique_transfer" UNIQUE ("token_id", "from_address", "to_address", "block_number", "transaction_hash")
 );
 
 -- Add foreign key constraint if it doesn't exist
