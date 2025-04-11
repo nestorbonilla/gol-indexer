@@ -29,8 +29,7 @@ CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"to_address" text NOT NULL,
 	"block_number" bigint NOT NULL,
 	"transaction_hash" text NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now(),
-	CONSTRAINT "lifeform_transfers_unique_transfer" UNIQUE ("token_id", "from_address", "to_address", "block_number", "transaction_hash")
+	"timestamp" timestamp with time zone DEFAULT now()
 );
 
 -- Add foreign key constraint if it doesn't exist
@@ -43,6 +42,10 @@ BEGIN
     FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
   END IF;
 END $$;
+
+-- Add unique index to prevent duplicates
+CREATE UNIQUE INDEX IF NOT EXISTS "lifeform_transfers_unique_idx" 
+ON "lifeform_transfers" ("token_id", "from_address", "to_address", "block_number", "transaction_hash");
 
 -- Create the lifeform_moves table
 CREATE TABLE IF NOT EXISTS "lifeform_moves" (

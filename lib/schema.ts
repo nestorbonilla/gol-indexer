@@ -1,4 +1,4 @@
-import { bigint, pgTable, text, uuid, boolean, timestamp, integer, unique } from "drizzle-orm/pg-core";
+import { bigint, pgTable, text, uuid, boolean, timestamp, integer, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const lifeformTokens = pgTable("lifeform_tokens", {
   _id: uuid("_id").primaryKey().defaultRandom(),
@@ -23,7 +23,7 @@ export const lifeformTransfers = pgTable("lifeform_transfers", {
   timestamp: timestamp("timestamp").defaultNow(),
 }, (table) => {
   return {
-    uniqueTransfer: unique().on(
+    uniqueTransferIdx: uniqueIndex("lifeform_transfers_unique_idx").on(
       table.token_id,
       table.from_address,
       table.to_address,

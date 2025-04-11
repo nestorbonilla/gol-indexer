@@ -88,7 +88,7 @@
     },
     "public.lifeform_transfers": {
       "name": "lifeform_transfers",
-      "schema": "",
+      "schema": "public",
       "columns": {
         "_id": {
           "name": "_id",
@@ -100,67 +100,53 @@
         "token_id": {
           "name": "token_id",
           "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "from_address": {
           "name": "from_address",
           "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "to_address": {
           "name": "to_address",
           "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "block_number": {
           "name": "block_number",
-          "type": "bigint",
-          "primaryKey": false,
+          "type": "integer",
           "notNull": true
         },
         "transaction_hash": {
           "name": "transaction_hash",
           "type": "text",
-          "primaryKey": false,
           "notNull": true
         },
         "timestamp": {
           "name": "timestamp",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false,
+          "type": "timestamp",
           "default": "now()"
         }
       },
-      "indexes": {},
       "foreignKeys": {
         "lifeform_transfers_token_id_fkey": {
           "name": "lifeform_transfers_token_id_fkey",
           "tableFrom": "lifeform_transfers",
           "tableTo": "lifeform_tokens",
-          "columnsFrom": [
-            "token_id"
-          ],
-          "columnsTo": [
-            "token_id"
-          ],
-          "onDelete": "CASCADE",
-          "onUpdate": "NO ACTION"
+          "columnsFrom": ["token_id"],
+          "columnsTo": ["token_id"],
+          "onDelete": "cascade",
+          "onUpdate": "cascade"
         }
       },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "lifeform_transfers_unique_transfer": {
-          "name": "lifeform_transfers_unique_transfer",
-          "columns": ["token_id", "from_address", "to_address", "block_number", "transaction_hash"]
+      "indexes": {
+        "lifeform_transfers_unique_idx": {
+          "name": "lifeform_transfers_unique_idx",
+          "columns": ["token_id", "from_address", "to_address", "block_number", "transaction_hash"],
+          "isUnique": true
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "uniqueConstraints": {}
     },
     "public.lifeform_moves": {
       "name": "lifeform_moves",
