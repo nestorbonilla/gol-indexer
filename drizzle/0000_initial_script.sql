@@ -43,6 +43,28 @@ BEGIN
   END IF;
 END $$;
 
+-- Create the lifeform_moves table
+CREATE TABLE IF NOT EXISTS "lifeform_moves" (
+	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"token_id" text NOT NULL,
+	"caller_address" text NOT NULL,
+	"block_number" bigint NOT NULL,
+	"transaction_hash" text NOT NULL,
+	"age" bigint NOT NULL,
+	"timestamp" timestamp with time zone DEFAULT now()
+);
+
+-- Add foreign key constraint for lifeform_moves if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'lifeform_moves_token_id_fkey'
+  ) THEN
+    ALTER TABLE "lifeform_moves" ADD CONSTRAINT "lifeform_moves_token_id_fkey" 
+    FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
+  END IF;
+END $$;
+
 -- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
   pattern_type text,

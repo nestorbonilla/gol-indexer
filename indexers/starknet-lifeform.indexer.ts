@@ -1,7 +1,7 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
-import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
+import { lifeformTokens, lifeformTransfers, lifeformMoves } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
 import { eq } from "drizzle-orm";
@@ -40,6 +40,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
     schema: {
       lifeformTokens,
       lifeformTransfers,
+      lifeformMoves,
     },
   });
   console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
@@ -94,7 +95,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       logger.info(`Current block number: ${header.blockNumber}`);
       logger.info(`Received block ${endCursor?.orderKey} with ${events.length} events`);
       
-      // First, process all NewLifeForm events to ensure tokens exist
+      // Collect all events first
       const newLifeFormEvents = [];
       const transferEvents = [];
       const newMoveEvents = [];
@@ -116,36 +117,33 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Process NewLifeForm events first
-      for (const { event, decoded } of newLifeFormEvents) {
-        logger.info(decoded);
+      // Process in batches
+      if (newLifeFormEvents.length > 0) {
+        // Batch insert for lifeform tokens
+        await db.insert(lifeformTokens).values(
+          newLifeFormEvents.map(({ decoded }) => ({
+            token_id: decoded.token_id?.toString(),
+            owner: normalizeAddress(decoded.owner),
+            is_loop: decoded.lifeform_data.is_loop,
+            is_still: decoded.lifeform_data.is_still,
+            is_alive: decoded.lifeform_data.is_alive,
+            is_dead: decoded.lifeform_data.is_dead,
+            sequence_length: Number(decoded.lifeform_data.sequence_length),
+            current_state: decoded.lifeform_data.current_state.toString(),
+            age: Number(decoded.lifeform_data.age),
+          }))
+        );
         
-        // Insert into lifeform_tokens (current state)
-        await db.insert(lifeformTokens).values({
-          token_id: decoded.token_id?.toString(),
-          owner: normalizeAddress(decoded.owner),
-          is_loop: decoded.lifeform_data.is_loop,
-          is_still: decoded.lifeform_data.is_still,
-          is_alive: decoded.lifeform_data.is_alive,
-          is_dead: decoded.lifeform_data.is_dead,
-          sequence_length: Number(decoded.lifeform_data.sequence_length),
-          current_state: decoded.lifeform_data.current_state.toString(),
-          age: Number(decoded.lifeform_data.age),
-        });
-
-        // Record the mint transfer
-        await db.insert(lifeformTransfers).values({
-          token_id: decoded.token_id?.toString(),
-          from_address: normalizeAddress("0x0"), // For mints, from is zero address
-          to_address: normalizeAddress(decoded.owner),
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-        });
-
-        // Update the age in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ age: Number(decoded.lifeform_data.age) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id?.toString()));
+        // Batch insert for transfers
+        await db.insert(lifeformTransfers).values(
+          newLifeFormEvents.map(({ event, decoded }) => ({
+            token_id: decoded.token_id?.toString(),
+            from_address: normalizeAddress("0x0"),
+            to_address: normalizeAddress(decoded.owner),
+            block_number: Number(header.blockNumber),
+            transaction_hash: event.transactionHash || "",
+          }))
+        );
       }
 
       // Then process Transfer events
@@ -164,6 +162,51 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           to_address: normalizeAddress(decoded.to),
           block_number: Number(header.blockNumber),
           transaction_hash: event.transactionHash || "",
+        });
+      }
+
+      // Process NewMove events
+      for (const { event, decoded } of newMoveEvents) {
+        logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
+        
+        // Find the transaction that emitted this event
+        const transactionIndex = event.transactionIndex;
+        const transaction = block.transactions?.[transactionIndex];
+        
+        // Get the caller address from the transaction
+        // The actual caller is the sender of the transaction
+        // For Starknet, this is typically the contract that was called
+        let callerAddress = "0x0";
+        
+        if (transaction) {
+          // Log transaction details for debugging
+          logger.info(`Transaction details: ${JSON.stringify(transaction)}`);
+          
+          // Try to extract the caller address based on transaction type
+          // We'll use a type assertion to handle the different transaction types
+          const tx = transaction as any;
+          
+          if (tx.invokeV0?.contract_address) {
+            callerAddress = tx.invokeV0.contract_address;
+          } else if (tx.invokeV1?.contract_address) {
+            callerAddress = tx.invokeV1.contract_address;
+          } else if (tx.deploy?.contract_address) {
+            callerAddress = tx.deploy.contract_address;
+          }
+        }
+        
+        // Update the age in lifeform_tokens
+        await db.update(lifeformTokens)
+          .set({ age: Number(decoded.age) })
+          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
+          
+        // Record the move in lifeform_moves
+        await db.insert(lifeformMoves).values({
+          token_id: decoded.token_id.toString(),
+          caller_address: normalizeAddress(callerAddress),
+          block_number: Number(header.blockNumber),
+          transaction_hash: event.transactionHash || "",
+          age: Number(decoded.age),
         });
       }
     },

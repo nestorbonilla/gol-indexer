@@ -22,3 +22,13 @@ export const lifeformTransfers = pgTable("lifeform_transfers", {
   transaction_hash: text("transaction_hash").notNull(),
   timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
 });
+
+export const lifeformMoves = pgTable("lifeform_moves", {
+  _id: uuid("_id").primaryKey().defaultRandom(),
+  token_id: text("token_id").notNull(),
+  caller_address: text("caller_address").notNull(),
+  block_number: bigint("block_number", { mode: "number" }).notNull(),
+  transaction_hash: text("transaction_hash").notNull(),
+  age: bigint("age", { mode: "number" }).notNull(),
+  timestamp: timestamp("timestamp", { withTimezone: true }).defaultNow(),
+});
