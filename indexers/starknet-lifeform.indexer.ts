@@ -99,6 +99,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       const newLifeFormEvents = [];
       const transferEvents = [];
       const newMoveEvents = [];
+      const processedEventHashes = new Set(); // Track processed events
 
       // Separate events by type
       for (const event of events) {
@@ -108,17 +109,33 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           eventName: "gol_starknet::gol_lifeforms::GolLifeforms::Event"
         });
 
+        // Create a unique identifier for this event
+        const eventHash = `${event.transactionHash}-${event.transactionIndex}-${event.eventIndex}`;
+        
+        // Skip if we've already processed this event
+        if (processedEventHashes.has(eventHash)) {
+          logger.info(`Skipping duplicate event: ${eventHash}`);
+          continue;
+        }
+        
+        processedEventHashes.add(eventHash);
+
         if (decoded.args._tag === "NewLifeForm") {
+          logger.info(`Processing NewLifeForm event: ${eventHash}`);
           newLifeFormEvents.push({ event, decoded: decoded.args.NewLifeForm });
         } else if (decoded.args._tag === "Transfer") {
+          logger.info(`Processing Transfer event: ${eventHash}`);
           transferEvents.push({ event, decoded: decoded.args.Transfer });
         } else if (decoded.args._tag === "NewMove") {
+          logger.info(`Processing NewMove event: ${eventHash}`);
           newMoveEvents.push({ event, decoded: decoded.args.NewMove });        
         }
       }
 
       // Process in batches
       if (newLifeFormEvents.length > 0) {
+        logger.info(`Processing ${newLifeFormEvents.length} NewLifeForm events`);
+        
         // Batch insert for lifeform tokens
         await db.insert(lifeformTokens).values(
           newLifeFormEvents.map(({ decoded }) => ({
@@ -148,6 +165,8 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
 
       // Then process Transfer events in batch
       if (transferEvents.length > 0) {
+        logger.info(`Processing ${transferEvents.length} Transfer events`);
+        
         // First update all token owners in a batch
         for (const { decoded } of transferEvents) {
           logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
