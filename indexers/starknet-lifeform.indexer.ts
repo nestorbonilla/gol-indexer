@@ -98,6 +98,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       const newLifeFormEvents = [];
       const transferEvents = [];
       const newMoveEvents = [];
+      const processedTransactions = new Set();
 
       // Separate events by type
       for (const event of events) {
@@ -134,13 +135,22 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         });
 
         // Record the mint transfer
-        await db.insert(lifeformTransfers).values({
-          token_id: decoded.token_id?.toString(),
-          from_address: normalizeAddress("0x0"), // For mints, from is zero address
-          to_address: normalizeAddress(decoded.owner),
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-        });
+        const txKey = `${event.transactionHash}-${decoded.token_id?.toString()}`;
+        if (!processedTransactions.has(txKey)) {
+          try {
+            await db.insert(lifeformTransfers).values({
+              token_id: decoded.token_id?.toString(),
+              from_address: normalizeAddress("0x0"), // For mints, from is zero address
+              to_address: normalizeAddress(decoded.owner),
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+            });
+            processedTransactions.add(txKey);
+          } catch (error) {
+            // Ignore duplicate key errors
+            logger.info(`Skipping duplicate transfer for token ${decoded.token_id}`);
+          }
+        }
 
         // Update the age in lifeform_tokens
         await db.update(lifeformTokens)
@@ -158,13 +168,22 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
 
         // Record transfer in history
-        await db.insert(lifeformTransfers).values({
-          token_id: decoded.token_id.toString(),
-          from_address: normalizeAddress(decoded.from),
-          to_address: normalizeAddress(decoded.to),
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-        });
+        const txKey = `${event.transactionHash}-${decoded.token_id.toString()}`;
+        if (!processedTransactions.has(txKey)) {
+          try {
+            await db.insert(lifeformTransfers).values({
+              token_id: decoded.token_id.toString(),
+              from_address: normalizeAddress(decoded.from),
+              to_address: normalizeAddress(decoded.to),
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+            });
+            processedTransactions.add(txKey);
+          } catch (error) {
+            // Ignore duplicate key errors
+            logger.info(`Skipping duplicate transfer for token ${decoded.token_id}`);
+          }
+        }
       }
 
       // Process NewMove events
