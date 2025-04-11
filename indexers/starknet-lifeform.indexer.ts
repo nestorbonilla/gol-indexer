@@ -134,7 +134,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           }))
         );
         
-        // Batch insert for transfers
+        // Batch insert for transfers from minting
         await db.insert(lifeformTransfers).values(
           newLifeFormEvents.map(({ event, decoded }) => ({
             token_id: decoded.token_id?.toString(),
@@ -146,68 +146,77 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         );
       }
 
-      // Then process Transfer events
-      for (const { event, decoded } of transferEvents) {
-        logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
-        
-        // Update current owner in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ owner: normalizeAddress(decoded.to) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
-
-        // Record transfer in history
-        await db.insert(lifeformTransfers).values({
-          token_id: decoded.token_id.toString(),
-          from_address: normalizeAddress(decoded.from),
-          to_address: normalizeAddress(decoded.to),
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-        });
-      }
-
-      // Process NewMove events
-      for (const { event, decoded } of newMoveEvents) {
-        logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
-        
-        // Find the transaction that emitted this event
-        const transactionIndex = event.transactionIndex;
-        const transaction = block.transactions?.[transactionIndex];
-        
-        // Get the caller address from the transaction
-        // The actual caller is the sender of the transaction
-        // For Starknet, this is typically the contract that was called
-        let callerAddress = "0x0";
-        
-        if (transaction) {
-          // Log transaction details for debugging
-          logger.info(`Transaction details: ${JSON.stringify(transaction)}`);
+      // Then process Transfer events in batch
+      if (transferEvents.length > 0) {
+        // First update all token owners in a batch
+        for (const { decoded } of transferEvents) {
+          logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
           
-          // Try to extract the caller address based on transaction type
-          // We'll use a type assertion to handle the different transaction types
-          const tx = transaction as any;
-          
-          if (tx.invokeV0?.contract_address) {
-            callerAddress = tx.invokeV0.contract_address;
-          } else if (tx.invokeV1?.contract_address) {
-            callerAddress = tx.invokeV1.contract_address;
-          } else if (tx.deploy?.contract_address) {
-            callerAddress = tx.deploy.contract_address;
-          }
+          // Update current owner in lifeform_tokens
+          await db.update(lifeformTokens)
+            .set({ owner: normalizeAddress(decoded.to) })
+            .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
         }
         
-        // Update the age in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ age: Number(decoded.age) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
+        // Then insert all transfers in a batch
+        await db.insert(lifeformTransfers).values(
+          transferEvents.map(({ event, decoded }) => ({
+            token_id: decoded.token_id.toString(),
+            from_address: normalizeAddress(decoded.from),
+            to_address: normalizeAddress(decoded.to),
+            block_number: Number(header.blockNumber),
+            transaction_hash: event.transactionHash || "",
+          }))
+        );
+      }
+
+      // Process NewMove events in batch
+      if (newMoveEvents.length > 0) {
+        // First update all token ages in a batch
+        for (const { decoded } of newMoveEvents) {
+          logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
           
-        // Record the move in lifeform_moves
-        await db.insert(lifeformMoves).values({
-          token_id: decoded.token_id.toString(),
-          caller_address: normalizeAddress(callerAddress),
-          block_number: Number(header.blockNumber),
-          transaction_hash: event.transactionHash || "",
-          age: Number(decoded.age),
-        });
+          // Update the age in lifeform_tokens
+          await db.update(lifeformTokens)
+            .set({ age: Number(decoded.age) })
+            .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
+        }
+        
+        // Then insert all moves in a batch
+        await db.insert(lifeformMoves).values(
+          newMoveEvents.map(({ event, decoded }) => {
+            // Find the transaction that emitted this event
+            const transactionIndex = event.transactionIndex;
+            const transaction = block.transactions?.[transactionIndex];
+            
+            // Get the caller address from the transaction
+            let callerAddress = "0x0";
+            
+            if (transaction) {
+              // Log transaction details for debugging
+              logger.info(`Transaction details: ${JSON.stringify(transaction)}`);
+              
+              // Try to extract the caller address based on transaction type
+              const tx = transaction as any;
+              
+              if (tx.invokeV0?.contract_address) {
+                callerAddress = tx.invokeV0.contract_address;
+              } else if (tx.invokeV1?.contract_address) {
+                callerAddress = tx.invokeV1.contract_address;
+              } else if (tx.deploy?.contract_address) {
+                callerAddress = tx.deploy.contract_address;
+              }
+            }
+            
+            return {
+              token_id: decoded.token_id.toString(),
+              caller_address: normalizeAddress(callerAddress),
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+              age: Number(decoded.age),
+            };
+          })
+        );
       }
     },
   });
