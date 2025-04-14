@@ -14,6 +14,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Create directory for Apibara state
+RUN mkdir -p /app/.apibara && chmod 777 /app/.apibara
+
 # Build the application
 RUN pnpm run drizzle:generate
 RUN pnpm run build
