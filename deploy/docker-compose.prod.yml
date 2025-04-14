@@ -9,8 +9,7 @@ services:
       - SUPABASE_HOST=${SUPABASE_HOST}
       - SUPABASE_PASSWORD=${SUPABASE_PASSWORD}
       - DNA_TOKEN=${DNA_TOKEN}
-    ports:
-      - "3000:3000"
+    network_mode: "host"
     volumes:
       - indexer_data:/app/.apibara
     command: >
