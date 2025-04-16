@@ -1,4 +1,6 @@
 #!/bin/bash
+
+# Cleanup script for the indexer
 set -e
 
 echo "Stopping and removing containers..."
@@ -10,4 +12,4 @@ docker system prune -f
 echo "Removing indexer data volume..."
 docker volume rm gol-indexer_indexer_data || true
 
-echo "Cleanup complete. You can now redeploy with ./deploy/deploy.sh" 
+echo "Cleanup complete. You can now redeploy with ./deploy/deploy.sh"
