@@ -130,4 +130,32 @@ BEGIN
     t.token_id
   LIMIT CASE WHEN owner_address IS NULL THEN 100 ELSE NULL END;
 END;
-$$ LANGUAGE plpgsql; 
+$$ LANGUAGE plpgsql;
+
+-- Check if the supabase_realtime publication exists
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication
+    WHERE pubname = 'supabase_realtime'
+  ) THEN
+    -- Create the publication if it doesn't exist
+    EXECUTE 'CREATE PUBLICATION supabase_realtime';
+  END IF;
+END
+$$;
+
+-- Check if the table is already in the publication before adding it
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'lifeform_tokens'
+  ) THEN
+    -- Add the table to the publication only if it's not already there
+    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE lifeform_tokens';
+  END IF;
+END
+$$; 

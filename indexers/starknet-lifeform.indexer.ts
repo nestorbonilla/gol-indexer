@@ -34,8 +34,9 @@ console.log("New move selector:", NEW_MOVE_SELECTOR);
 export default function (runtimeConfig: ApibaraRuntimeConfig) {
   const {
     starknet: { startingBlock, streamUrl },
-  } = runtimeConfig;
+  } = runtimeConfig as { starknet: { startingBlock: number; streamUrl: string } };
 
+  // Create a single database connection
   const database = drizzle({
     schema: {
       lifeformTokens,
@@ -43,6 +44,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       lifeformMoves,
     },
   });
+
   console.log(`Starting block: ${startingBlock} at ${streamUrl}`);
 
   return defineIndexer(StarknetStream)({
@@ -56,7 +58,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         idColumn: {
           "*": "_id",
         },
-        persistState: true, // Enable persistence, leave false if you want to populate the database from scratch
+        persistState: false, // Set to false to process all historical events from the starting block
         indexerName: "lifeform_tokens",
         migrate: {
           migrationsFolder: "./drizzle",
@@ -122,68 +124,116 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       for (const { event, decoded } of newLifeFormEvents) {
         logger.info(decoded);
         
-        // Insert into lifeform_tokens (current state)
-        await db.insert(lifeformTokens).values({
-          token_id: decoded.token_id?.toString(),
-          owner: normalizeAddress(decoded.owner),
-          is_loop: decoded.lifeform_data.is_loop,
-          is_still: decoded.lifeform_data.is_still,
-          is_alive: decoded.lifeform_data.is_alive,
-          is_dead: decoded.lifeform_data.is_dead,
-          sequence_length: Number(decoded.lifeform_data.sequence_length),
-          current_state: decoded.lifeform_data.current_state.toString(),
-          age: Number(decoded.lifeform_data.age),
-        });
-
-        // Record the mint transfer
-        const txKey = `${event.transactionHash}-${decoded.token_id?.toString()}`;
-        if (!processedTransactions.has(txKey)) {
+        const tokenId = decoded.token_id?.toString();
+        
+        try {
+          // Get a fresh database connection
+          const db = database;
+          
+          // First try to insert the token
           try {
-            await db.insert(lifeformTransfers).values({
-              token_id: decoded.token_id?.toString(),
-              from_address: normalizeAddress("0x0"), // For mints, from is zero address
-              to_address: normalizeAddress(decoded.owner),
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
+            await db.insert(lifeformTokens).values({
+              token_id: tokenId,
+              owner: normalizeAddress(decoded.owner),
+              is_loop: decoded.lifeform_data.is_loop,
+              is_still: decoded.lifeform_data.is_still,
+              is_alive: decoded.lifeform_data.is_alive,
+              is_dead: decoded.lifeform_data.is_dead,
+              sequence_length: Number(decoded.lifeform_data.sequence_length),
+              current_state: decoded.lifeform_data.current_state.toString(),
+              age: Number(decoded.lifeform_data.age),
             });
-            processedTransactions.add(txKey);
-          } catch (error) {
-            // Ignore duplicate key errors
-            logger.info(`Skipping duplicate transfer for token ${decoded.token_id}`);
+            logger.info(`Inserted new token ${tokenId}`);
+          } catch (insertError) {
+            // If insert fails, try to update
+            try {
+              await db.update(lifeformTokens)
+                .set({
+                  owner: normalizeAddress(decoded.owner),
+                  is_loop: decoded.lifeform_data.is_loop,
+                  is_still: decoded.lifeform_data.is_still,
+                  is_alive: decoded.lifeform_data.is_alive,
+                  is_dead: decoded.lifeform_data.is_dead,
+                  sequence_length: Number(decoded.lifeform_data.sequence_length),
+                  current_state: decoded.lifeform_data.current_state.toString(),
+                  age: Number(decoded.lifeform_data.age),
+                })
+                .where(eq(lifeformTokens.token_id, tokenId));
+              logger.info(`Updated existing token ${tokenId}`);
+            } catch (updateError: unknown) {
+              const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+              logger.error(`Failed to update token ${tokenId}: ${errorMessage}`);
+            }
           }
-        }
 
-        // Update the age in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ age: Number(decoded.lifeform_data.age) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id?.toString()));
+          // Record the mint transfer
+          const txKey = `${event.transactionHash}-${tokenId}`;
+          if (!processedTransactions.has(txKey)) {
+            try {
+              await db.insert(lifeformTransfers).values({
+                token_id: tokenId,
+                from_address: normalizeAddress("0x0"), // For mints, from is zero address
+                to_address: normalizeAddress(decoded.owner),
+                block_number: Number(header.blockNumber),
+                transaction_hash: event.transactionHash || "",
+              });
+              processedTransactions.add(txKey);
+              logger.info(`Recorded mint transfer for token ${tokenId}`);
+            } catch (transferError) {
+              // Ignore duplicate key errors for transfers
+              logger.info(`Skipping duplicate transfer for token ${tokenId}`);
+            }
+          }
+        } catch (error: unknown) {
+          // Log the error but don't let it abort the entire indexer
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`Error processing new lifeform for token ${tokenId}: ${errorMessage}`);
+        }
       }
 
       // Then process Transfer events
       for (const { event, decoded } of transferEvents) {
         logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
         
-        // Update current owner in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ owner: normalizeAddress(decoded.to) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
-
-        // Record transfer in history
-        const txKey = `${event.transactionHash}-${decoded.token_id.toString()}`;
-        if (!processedTransactions.has(txKey)) {
+        const tokenId = decoded.token_id.toString();
+        
+        try {
+          // Get a fresh database connection
+          const db = database;
+          
+          // Try to update the token owner
           try {
-            await db.insert(lifeformTransfers).values({
-              token_id: decoded.token_id.toString(),
-              from_address: normalizeAddress(decoded.from),
-              to_address: normalizeAddress(decoded.to),
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
-            });
-            processedTransactions.add(txKey);
-          } catch (error) {
-            // Ignore duplicate key errors
-            logger.info(`Skipping duplicate transfer for token ${decoded.token_id}`);
+            await db.update(lifeformTokens)
+              .set({ owner: normalizeAddress(decoded.to) })
+              .where(eq(lifeformTokens.token_id, tokenId));
+            logger.info(`Updated owner for token ${tokenId}`);
+          } catch (updateError: unknown) {
+            const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+            logger.error(`Failed to update owner for token ${tokenId}: ${errorMessage}`);
           }
+
+          // Record transfer in history
+          const txKey = `${event.transactionHash}-${tokenId}`;
+          if (!processedTransactions.has(txKey)) {
+            try {
+              await db.insert(lifeformTransfers).values({
+                token_id: tokenId,
+                from_address: normalizeAddress(decoded.from),
+                to_address: normalizeAddress(decoded.to),
+                block_number: Number(header.blockNumber),
+                transaction_hash: event.transactionHash || "",
+              });
+              processedTransactions.add(txKey);
+              logger.info(`Recorded transfer for token ${tokenId}`);
+            } catch (transferError) {
+              // Ignore duplicate key errors for transfers
+              logger.info(`Skipping duplicate transfer for token ${tokenId}`);
+            }
+          }
+        } catch (error: unknown) {
+          // Log the error but don't let it abort the entire indexer
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`Error processing transfer for token ${tokenId}: ${errorMessage}`);
         }
       }
 
@@ -191,22 +241,41 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       for (const { event, decoded } of newMoveEvents) {
         logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
         
-        // Update the age in lifeform_tokens
-        await db.update(lifeformTokens)
-          .set({ age: Number(decoded.age) })
-          .where(eq(lifeformTokens.token_id, decoded.token_id.toString()));
-
-        // Insert into lifeform_moves
+        const tokenId = decoded.token_id.toString();
+        
         try {
-          await db.insert(lifeformMoves).values({
-            token_id: decoded.token_id.toString(),
-            caller_address: normalizeAddress(event.data[0] || "0x0"), // First data field is the caller address
-            block_number: Number(header.blockNumber),
-            transaction_hash: event.transactionHash || "",
-            age: Number(decoded.age)
-          });
-        } catch (error) {
-          logger.info(`Skipping duplicate move for token ${decoded.token_id}`);
+          // Get a fresh database connection
+          const db = database;
+          
+          // Try to update the token age
+          try {
+            await db.update(lifeformTokens)
+              .set({ age: Number(decoded.age) })
+              .where(eq(lifeformTokens.token_id, tokenId));
+            logger.info(`Updated age for token ${tokenId}`);
+          } catch (updateError: unknown) {
+            const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
+            logger.error(`Failed to update age for token ${tokenId}: ${errorMessage}`);
+          }
+
+          // Insert into lifeform_moves
+          try {
+            await db.insert(lifeformMoves).values({
+              token_id: tokenId,
+              caller_address: normalizeAddress(event.data[0] || "0x0"), // First data field is the caller address
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+              age: Number(decoded.age)
+            });
+            logger.info(`Recorded move for token ${tokenId}`);
+          } catch (moveError) {
+            // Ignore duplicate key errors for moves
+            logger.info(`Skipping duplicate move for token ${tokenId}`);
+          }
+        } catch (error: unknown) {
+          // Log the error but don't let it abort the entire indexer
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error(`Error processing move for token ${tokenId}: ${errorMessage}`);
         }
       }
     },
