@@ -146,16 +146,5 @@ BEGIN
 END
 $$;
 
--- Check if the table is already in the publication before adding it
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime' AND tablename = 'lifeform_tokens'
-  ) THEN
-    -- Add the table to the publication only if it's not already there
-    EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE lifeform_tokens';
-  END IF;
-END
-$$; 
+-- Enable real-time updates for lifeform_tokens table
+ALTER PUBLICATION supabase_realtime ADD TABLE lifeform_tokens; 
