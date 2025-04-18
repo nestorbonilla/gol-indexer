@@ -245,10 +245,10 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             age: Number(decoded.age)
           }));
 
-          // Use a more efficient batch update query
+          // Use a more efficient batch update query with proper type casting
           await db.execute(sql`
             UPDATE lifeform_tokens AS t
-            SET age = c.age
+            SET age = c.age::bigint
             FROM (VALUES ${sql.join(updates.map(u => sql`(${u.token_id}, ${u.age})`), sql`, `)}) AS c(token_id, age)
             WHERE t.token_id = c.token_id
           `);
