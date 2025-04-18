@@ -4,7 +4,7 @@ import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
 import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { lifeformAbi } from "@/lib/abi";
 
 // Helper function to normalize addresses to a consistent format
@@ -236,30 +236,27 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Process NewMove events - simplified to only update the age
-      for (const { event, decoded } of newMoveEvents) {
-        logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
-        
-        const tokenId = decoded.token_id.toString();
-        
+      // Process NewMove events - optimized batch update
+      if (newMoveEvents.length > 0) {
         try {
-          // Get a fresh database connection
-          const db = database;
-          
-          // Update the token age only
-          try {
-            await db.update(lifeformTokens)
-              .set({ age: Number(decoded.age) })
-              .where(eq(lifeformTokens.token_id, tokenId));
-            logger.info(`Updated age for token ${tokenId}`);
-          } catch (updateError: unknown) {
-            const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
-            logger.error(`Failed to update age for token ${tokenId}: ${errorMessage}`);
-          }
+          // Batch update all tokens in a single query
+          const updates = newMoveEvents.map(({ decoded }) => ({
+            token_id: decoded.token_id.toString(),
+            age: Number(decoded.age)
+          }));
+
+          // Use a more efficient batch update query
+          await db.execute(sql`
+            UPDATE lifeform_tokens AS t
+            SET age = c.age
+            FROM (VALUES ${sql.join(updates.map(u => sql`(${u.token_id}, ${u.age})`), sql`, `)}) AS c(token_id, age)
+            WHERE t.token_id = c.token_id
+          `);
+
+          logger.info(`Batch updated age for ${updates.length} tokens`);
         } catch (error: unknown) {
-          // Log the error but don't let it abort the entire indexer
           const errorMessage = error instanceof Error ? error.message : String(error);
-          logger.error(`Error processing move for token ${tokenId}: ${errorMessage}`);
+          logger.error(`Error processing batch move updates: ${errorMessage}`);
         }
       }
     },
