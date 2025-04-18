@@ -47,28 +47,6 @@ END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS "lifeform_transfers_unique_idx" 
 ON "lifeform_transfers" ("token_id", "from_address", "to_address", "block_number", "transaction_hash");
 
--- Create the lifeform_moves table
-CREATE TABLE IF NOT EXISTS "lifeform_moves" (
-	"_id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"token_id" text NOT NULL,
-	"caller_address" text NOT NULL,
-	"block_number" bigint NOT NULL,
-	"transaction_hash" text NOT NULL,
-	"age" bigint NOT NULL,
-	"timestamp" timestamp with time zone DEFAULT now()
-);
-
--- Add foreign key constraint for lifeform_moves if it doesn't exist
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'lifeform_moves_token_id_fkey'
-  ) THEN
-    ALTER TABLE "lifeform_moves" ADD CONSTRAINT "lifeform_moves_token_id_fkey" 
-    FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
-  END IF;
-END $$;
-
 -- Function to get lifeform tokens with their latest transfers
 CREATE OR REPLACE FUNCTION get_latest_transfers_for_tokens(
   pattern_type text,
@@ -132,19 +110,28 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Check if the supabase_realtime publication exists
+-- Handle realtime publication setup
 DO $$
 BEGIN
+  -- First, try to drop the table from publication if it exists
+  IF EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'lifeform_tokens'
+  ) THEN
+    EXECUTE 'ALTER PUBLICATION supabase_realtime DROP TABLE lifeform_tokens';
+  END IF;
+
+  -- Then create publication if it doesn't exist
   IF NOT EXISTS (
     SELECT 1
     FROM pg_publication
     WHERE pubname = 'supabase_realtime'
   ) THEN
-    -- Create the publication if it doesn't exist
     EXECUTE 'CREATE PUBLICATION supabase_realtime';
   END IF;
-END
-$$;
 
--- Enable real-time updates for lifeform_tokens table
-ALTER PUBLICATION supabase_realtime ADD TABLE lifeform_tokens; 
+  -- Finally add the table to publication
+  EXECUTE 'ALTER PUBLICATION supabase_realtime ADD TABLE lifeform_tokens';
+END
+$$; 

@@ -1,7 +1,7 @@
 import { defineIndexer } from "@apibara/indexer";
 import { drizzleStorage, useDrizzleStorage, drizzle } from "@apibara/plugin-drizzle";
 import { getSelector, StarknetStream, decodeEvent } from "@apibara/starknet";
-import { lifeformTokens, lifeformTransfers, lifeformMoves } from "@/lib/schema";
+import { lifeformTokens, lifeformTransfers } from "@/lib/schema";
 import { useLogger } from "@apibara/indexer/plugins";
 import type { ApibaraRuntimeConfig } from "apibara/types";
 import { eq } from "drizzle-orm";
@@ -41,7 +41,6 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
     schema: {
       lifeformTokens,
       lifeformTransfers,
-      lifeformMoves,
     },
   });
 
@@ -237,7 +236,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Process NewMove events
+      // Process NewMove events - simplified to only update the age
       for (const { event, decoded } of newMoveEvents) {
         logger.info(`NewMove: token ${decoded.token_id} age ${decoded.age}`);
         
@@ -247,7 +246,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           // Get a fresh database connection
           const db = database;
           
-          // Try to update the token age
+          // Update the token age only
           try {
             await db.update(lifeformTokens)
               .set({ age: Number(decoded.age) })
@@ -256,21 +255,6 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           } catch (updateError: unknown) {
             const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
             logger.error(`Failed to update age for token ${tokenId}: ${errorMessage}`);
-          }
-
-          // Insert into lifeform_moves
-          try {
-            await db.insert(lifeformMoves).values({
-              token_id: tokenId,
-              caller_address: normalizeAddress(event.data[0] || "0x0"), // First data field is the caller address
-              block_number: Number(header.blockNumber),
-              transaction_hash: event.transactionHash || "",
-              age: Number(decoded.age)
-            });
-            logger.info(`Recorded move for token ${tokenId}`);
-          } catch (moveError) {
-            // Ignore duplicate key errors for moves
-            logger.info(`Skipping duplicate move for token ${tokenId}`);
           }
         } catch (error: unknown) {
           // Log the error but don't let it abort the entire indexer
