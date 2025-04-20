@@ -846,6 +846,22 @@ export const lifeformAbi = [
           }
         ],
         "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "count_live_cells",
+        "inputs": [
+          {
+            "name": "state",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
       }
     ]
   },
