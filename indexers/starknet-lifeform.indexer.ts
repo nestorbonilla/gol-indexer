@@ -21,7 +21,7 @@ function normalizeAddress(address: string): string {
 }
 
 // Contract constants
-const CONTRACT_ADDRESS = "0x6109b381adb08f2a4a183e528616fb18716e40b7e6247c0d2167d8f04010b5a";
+const CONTRACT_ADDRESS = "0x446cd71afac8c2f2feb03e689e6ec625f0284874f5d47e3ef45bb6873dc9d12";
 const NEW_LIFEFORM_SELECTOR = getSelector("NewLifeForm");
 const TRANSFER_SELECTOR = getSelector("Transfer");
 const NEW_MOVE_SELECTOR = getSelector("NewMove");

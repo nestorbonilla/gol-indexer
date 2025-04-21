@@ -123,17 +123,6 @@ export const lifeformAbi = [
         ],
         "outputs": [],
         "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "get_nutrient_contract_address",
-        "inputs": [],
-        "outputs": [
-          {
-            "type": "core::starknet::contract_address::ContractAddress"
-          }
-        ],
-        "state_mutability": "view"
       }
     ]
   },
@@ -876,30 +865,6 @@ export const lifeformAbi = [
     "inputs": [
       {
         "name": "nutrient_contract_address",
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "update_loop_minter_contract",
-    "inputs": [
-      {
-        "name": "loop_minter_contract",
-        "type": "core::starknet::contract_address::ContractAddress"
-      }
-    ],
-    "outputs": [],
-    "state_mutability": "external"
-  },
-  {
-    "type": "function",
-    "name": "update_path_minter_contract",
-    "inputs": [
-      {
-        "name": "path_minter_contract",
         "type": "core::starknet::contract_address::ContractAddress"
       }
     ],
