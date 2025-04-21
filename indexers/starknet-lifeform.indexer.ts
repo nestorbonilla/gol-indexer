@@ -119,7 +119,10 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Process NewLifeForm events first
+      // We need a map to track which tokens have been processed to ensure we process transfers correctly
+      const processedTokenIds = new Set<string>();
+
+      // Process ALL NewLifeForm events first to ensure tokens exist in database
       for (const { event, decoded } of newLifeFormEvents) {
         // Don't log the entire decoded object directly as it may contain bigints
         logger.info(`Processing new lifeform: Token ${decoded.token_id}, Owner: ${decoded.owner}`);
@@ -144,6 +147,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
               age: Number(decoded.lifeform_data.age),
             });
             logger.info(`Inserted new token ${tokenId}`);
+            processedTokenIds.add(tokenId);
           } catch (insertError) {
             // If insert fails, try to update
             try {
@@ -160,30 +164,14 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
                 })
                 .where(eq(lifeformTokens.token_id, tokenId));
               logger.info(`Updated existing token ${tokenId}`);
+              processedTokenIds.add(tokenId);
             } catch (updateError: unknown) {
               const errorMessage = updateError instanceof Error ? updateError.message : String(updateError);
               logger.error(`Failed to update token ${tokenId}: ${errorMessage}`);
             }
           }
 
-          // Record the mint transfer
-          const txKey = `${event.transactionHash}-${tokenId}`;
-          if (!processedTransactions.has(txKey)) {
-            try {
-              await db.insert(lifeformTransfers).values({
-                token_id: tokenId,
-                from_address: normalizeAddress("0x0"), // For mints, from is zero address
-                to_address: normalizeAddress(decoded.owner),
-                block_number: Number(header.blockNumber),
-                transaction_hash: event.transactionHash || "",
-              });
-              processedTransactions.add(txKey);
-              logger.info(`Recorded mint transfer for token ${tokenId}`);
-            } catch (transferError) {
-              // Ignore duplicate key errors for transfers
-              logger.info(`Skipping duplicate transfer for token ${tokenId}`);
-            }
-          }
+          // Don't process transfers here yet - we'll do it in a second pass
         } catch (error: unknown) {
           // Log the error but don't let it abort the entire indexer
           const errorMessage = error instanceof Error ? error.message : String(error);
@@ -191,7 +179,7 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         }
       }
 
-      // Then process Transfer events
+      // Now handle transfers - this ensures tokens already exist before processing transfers
       for (const { event, decoded } of transferEvents) {
         logger.info(`Transfer: ${decoded.from} -> ${decoded.to} (token: ${decoded.token_id})`);
         
@@ -200,6 +188,31 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
         try {
           // Get a fresh database connection
           const db = database;
+          
+          // If we're seeing a transfer event for a token that doesn't exist yet (not processed above),
+          // we need to create a minimal token record before processing the transfer
+          if (!processedTokenIds.has(tokenId)) {
+            logger.info(`Token ${tokenId} not yet processed, creating minimal record first`);
+            try {
+              await db.insert(lifeformTokens).values({
+                token_id: tokenId,
+                owner: normalizeAddress(decoded.to),
+                // Set default values for required fields
+                is_loop: false,
+                is_still: false,
+                is_alive: true,
+                is_dead: false,
+                sequence_length: 0,
+                current_state: "0",
+                age: 0,
+              });
+              processedTokenIds.add(tokenId);
+              logger.info(`Created minimal token ${tokenId} record to support transfer`);
+            } catch (tokenInsertError) {
+              // Token might already exist, which is fine
+              logger.info(`Token ${tokenId} might already exist, continuing with transfer`);
+            }
+          }
           
           // Try to update the token owner
           try {
@@ -234,6 +247,30 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
           // Log the error but don't let it abort the entire indexer
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error(`Error processing transfer for token ${tokenId}: ${errorMessage}`);
+        }
+      }
+
+      // Now process NewLifeForm mint transfers separately after we know tokens exist
+      for (const { event, decoded } of newLifeFormEvents) {
+        const tokenId = decoded.token_id?.toString();
+        
+        // Record the mint transfer if we haven't already done so
+        const txKey = `${event.transactionHash}-${tokenId}`;
+        if (!processedTransactions.has(txKey)) {
+          try {
+            await db.insert(lifeformTransfers).values({
+              token_id: tokenId,
+              from_address: normalizeAddress("0x0"), // For mints, from is zero address
+              to_address: normalizeAddress(decoded.owner),
+              block_number: Number(header.blockNumber),
+              transaction_hash: event.transactionHash || "",
+            });
+            processedTransactions.add(txKey);
+            logger.info(`Recorded mint transfer for token ${tokenId}`);
+          } catch (transferError) {
+            // Ignore duplicate key errors for transfers
+            logger.info(`Skipping duplicate transfer for token ${tokenId}`);
+          }
         }
       }
 
