@@ -32,17 +32,6 @@ CREATE TABLE IF NOT EXISTS "lifeform_transfers" (
 	"timestamp" timestamp with time zone DEFAULT now()
 );
 
--- Add foreign key constraint if it doesn't exist
-DO $$ 
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'lifeform_transfers_token_id_fkey'
-  ) THEN
-    ALTER TABLE "lifeform_transfers" ADD CONSTRAINT "lifeform_transfers_token_id_fkey" 
-    FOREIGN KEY ("token_id") REFERENCES "lifeform_tokens"("token_id") ON DELETE CASCADE;
-  END IF;
-END $$;
-
 -- Add unique index to prevent duplicates
 CREATE UNIQUE INDEX IF NOT EXISTS "lifeform_transfers_unique_idx" 
 ON "lifeform_transfers" ("token_id", "from_address", "to_address", "block_number", "transaction_hash");
