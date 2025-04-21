@@ -121,7 +121,8 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
 
       // Process NewLifeForm events first
       for (const { event, decoded } of newLifeFormEvents) {
-        logger.info(decoded);
+        // Don't log the entire decoded object directly as it may contain bigints
+        logger.info(`Processing new lifeform: Token ${decoded.token_id}, Owner: ${decoded.owner}`);
         
         const tokenId = decoded.token_id?.toString();
         
@@ -239,13 +240,15 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
       // Process NewMove events - optimized batch update
       if (newMoveEvents.length > 0) {
         try {
-          // Batch update all tokens in a single query
+          logger.info(`Processing ${newMoveEvents.length} move events in batch`);
+          
+          // Keep the batch update approach but with better error handling
           const updates = newMoveEvents.map(({ decoded }) => ({
             token_id: decoded.token_id.toString(),
             age: Number(decoded.age)
           }));
 
-          // Use a more efficient batch update query with proper type casting
+          // Use the batch update with proper error handling
           await db.execute(sql`
             UPDATE lifeform_tokens AS t
             SET age = c.age::bigint
@@ -253,10 +256,28 @@ export default function (runtimeConfig: ApibaraRuntimeConfig) {
             WHERE t.token_id = c.token_id
           `);
 
-          logger.info(`Batch updated age for ${updates.length} tokens`);
+          logger.info(`Successfully batch updated age for ${updates.length} tokens`);
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error(`Error processing batch move updates: ${errorMessage}`);
+          
+          // Fallback to individual updates if batch update fails
+          logger.info("Falling back to individual updates");
+          for (const { decoded } of newMoveEvents) {
+            const tokenId = decoded.token_id.toString();
+            const age = Number(decoded.age);
+            
+            try {
+              await db.update(lifeformTokens)
+                .set({ age })
+                .where(eq(lifeformTokens.token_id, tokenId));
+              
+              logger.info(`Updated age to ${age} for token ${tokenId}`);
+            } catch (moveError: unknown) {
+              const errorMessage = moveError instanceof Error ? moveError.message : String(moveError);
+              logger.error(`Error updating age for token ${tokenId}: ${errorMessage}`);
+            }
+          }
         }
       }
     },
