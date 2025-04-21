@@ -673,6 +673,17 @@ export const lifeformAbi = [
     "items": [
       {
         "type": "function",
+        "name": "get_grid_size",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u32"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
         "name": "unpack_grid_from_uint",
         "inputs": [
           {
@@ -843,22 +854,6 @@ export const lifeformAbi = [
         "outputs": [
           {
             "type": "gol_starknet::interfaces::PartialPathData"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
-        "name": "count_live_cells",
-        "inputs": [
-          {
-            "name": "state",
-            "type": "core::integer::u256"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::integer::u32"
           }
         ],
         "state_mutability": "view"
